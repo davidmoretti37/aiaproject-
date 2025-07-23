@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'aia_animation.dart';
+import 'particles_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -9,23 +9,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AIA Animation',
+      title: 'Flutter Particles',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: AIAAnimationScreen(),
-    );
-  }
-}
-
-class AIAAnimationScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
-        child: AIAAnimation(),
-      ),
+      home: ParticlesScreen(),
+      debugShowCheckedModeBanner: false,
     );
   }
 }
