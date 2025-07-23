@@ -1,42 +1,60 @@
 import 'package:flutter/material.dart';
+import 'dart:ui' as ui;
 import 'flutter_particles.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class ParticlesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // Particle background
+          // Background image
           Container(
-            width: double.infinity,
-            height: double.infinity,
-            child: FlutterParticles(
-              particleColors: [
-                Colors.white,
-              ],
-              particleCount: 1000,
-              particleSpread: 5.0,
-              speed: 0.5,
-              particleBaseSize: 80.0,
-              moveParticlesOnHover: true,
-              alphaParticles: true,
-              disableRotation: false,
-              particleHoverFactor: 2.0,
-              sizeRandomness: 1.5,
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/foggy_forest.jpg'),
+                fit: BoxFit.cover,
+              ),
             ),
           ),
-          // Cursive AIA text overlay - centered
+          // Blur filter overlay - increased blur for more effect
+          BackdropFilter(
+            filter: ui.ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0), // Increased from default blur
+            child: Container(
+              color: Colors.black.withOpacity(0.1),
+            ),
+          ),
+          // Particles overlay
+          FlutterParticles(
+            particleColors: [
+              Colors.white.withOpacity(0.8),
+              Colors.blue.withOpacity(0.6),
+              Colors.cyan.withOpacity(0.4),
+            ],
+            particleCount: 150,
+            particleSpread: 8.0,
+            speed: 0.05,
+            particleBaseSize: 80.0,
+            moveParticlesOnHover: true,
+            alphaParticles: true,
+            sizeRandomness: 0.8,
+          ),
+          // AIA Text overlay
           Center(
             child: Text(
               'AIA',
-              style: GoogleFonts.dancingScript(
+              style: TextStyle(
                 fontSize: 120,
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 6,
+                fontWeight: FontWeight.bold,
+                color: Colors.white.withOpacity(0.9),
+                letterSpacing: 8.0,
+                shadows: [
+                  Shadow(
+                    offset: Offset(2.0, 2.0),
+                    blurRadius: 4.0,
+                    color: Colors.black.withOpacity(0.5),
+                  ),
+                ],
               ),
             ),
           ),

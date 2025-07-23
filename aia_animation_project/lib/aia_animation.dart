@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
+import 'dart:math' as math;
 
 class AIAAnimation extends StatefulWidget {
   @override
@@ -10,161 +11,215 @@ class _AIAAnimationState extends State<AIAAnimation>
     with TickerProviderStateMixin {
   late final AnimationController _mainAnimationController;
   late final Animation<double> _mainAnimation;
-  late final AnimationController _straightLineAnimationController1;
-  late final Animation<double> _straightLineAnimation1;
-  late final AnimationController _straightLineAnimationController2;
-  late final Animation<double> _straightLineAnimation2;
 
   @override
   void initState() {
     super.initState();
     _mainAnimationController = AnimationController(
-      duration: const Duration(seconds: 4),
+      duration: const Duration(seconds: 6),
       vsync: this,
     );
-    _mainAnimation =
-        Tween<double>(begin: 0, end: 1).animate(_mainAnimationController)
-          ..addListener(() {
-            setState(() {});
-          });
-
-    _straightLineAnimationController1 = AnimationController(
-      duration: const Duration(seconds: 1),
-      vsync: this,
-    );
-    _straightLineAnimation1 = Tween<double>(begin: 0, end: 1)
-        .animate(_straightLineAnimationController1)
-      ..addListener(() {
-        setState(() {});
-      });
-
-    _straightLineAnimationController2 = AnimationController(
-      duration: const Duration(seconds: 1),
-      vsync: this,
-    );
-    _straightLineAnimation2 = Tween<double>(begin: 0, end: 1)
-        .animate(_straightLineAnimationController2)
-      ..addListener(() {
-        setState(() {});
-      });
-
-    _mainAnimationController.forward().whenComplete(() {
-      Future.delayed(const Duration(milliseconds: 100), () {
-        _straightLineAnimationController1.forward();
-      });
-      Future.delayed(const Duration(milliseconds: 500), () {
-        _straightLineAnimationController2.forward();
-      });
+    
+    // Use a smooth curve for natural handwriting motion
+    _mainAnimation = CurvedAnimation(
+      parent: _mainAnimationController,
+      curve: Curves.easeInOutCubic,
+    )..addListener(() {
+      setState(() {});
     });
+
+    _mainAnimationController.forward();
   }
 
   @override
   void dispose() {
     _mainAnimationController.dispose();
-    _straightLineAnimationController1.dispose();
-    _straightLineAnimationController2.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: AIAPainter(
-        _mainAnimation.value,
-        _straightLineAnimation1.value,
-        _straightLineAnimation2.value,
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFE8F4FD),
+            Color(0xFFF0F8FF),
+            Color(0xFFE6F3FF),
+          ],
+        ),
       ),
-      size: Size.infinite,
+      child: CustomPaint(
+        painter: AIAPainter(_mainAnimation.value),
+        size: Size.infinite,
+      ),
     );
   }
 }
 
 class AIAPainter extends CustomPainter {
-  final double mainProgress;
-  final double straightLineProgress1;
-  final double straightLineProgress2;
+  final double progress;
 
-  AIAPainter(
-      this.mainProgress, this.straightLineProgress1, this.straightLineProgress2);
+  AIAPainter(this.progress);
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black
+      ..color = Color(0xFF2C3E50)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 4.0
+      ..strokeWidth = 8.0
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    // Define letter dimensions for even spacing
+    // Make the letters large and visually significant
     double centerY = size.height / 2;
-    double letterHeight = 80.0;
-    double letterWidth = 60.0;
-    double letterSpacing = 50.0; // Reduced spacing to bring letters closer
-    double startX = size.width * 0.25; // Adjusted for better centering
+    double letterHeight = math.min(size.width * 0.25, 200.0); // Much larger
+    double letterWidth = letterHeight * 0.8;
+    double letterSpacing = letterWidth * 0.3; // Closer spacing for flow
+    
+    // Center the entire word with generous proportions
+    double totalWidth = letterWidth * 2.5 + letterSpacing * 2;
+    double startX = (size.width - totalWidth) / 2;
 
-    // Main continuous path for AIA
-    Path mainPath = Path();
-    
-    // Start from the very left edge of the screen
-    mainPath.moveTo(0, centerY);
-    
-    // Go straight to start of first A
-    mainPath.lineTo(startX, centerY);
-    
-    // First A - left side going up with slight angle
-    mainPath.lineTo(startX + letterWidth / 2, centerY - letterHeight);
-    
-    // Hard 180 turn at top, going down with same angle to complete A
-    mainPath.lineTo(startX + letterWidth, centerY);
-    
-    // Connection from bottom of A to bottom of I
-    mainPath.lineTo(startX + letterWidth + letterSpacing, centerY);
-    
-    // Letter I - straight up and down
-    mainPath.lineTo(startX + letterWidth + letterSpacing, centerY - letterHeight);
-    mainPath.lineTo(startX + letterWidth + letterSpacing, centerY);
-    
-    // Connection from bottom of I to bottom of second A
-    mainPath.lineTo(startX + letterWidth + letterSpacing * 2, centerY);
-    
-    // Second A - left side going up
-    mainPath.lineTo(startX + letterWidth + letterSpacing * 2 + letterWidth / 2, centerY - letterHeight);
-    
-    // Hard 180 turn at top, going down to complete second A
-    mainPath.lineTo(startX + letterWidth + letterSpacing * 2 + letterWidth, centerY);
-    
-    // Continue to the very right edge of the screen
-    mainPath.lineTo(size.width, centerY);
+    Path mainPath = _createFlowingCursiveAIA(startX, centerY, letterWidth, letterHeight, letterSpacing, size.width);
 
-    ui.PathMetric mainPathMetric = mainPath.computeMetrics().first;
-    ui.Path extractMainPath =
-        mainPathMetric.extractPath(0.0, mainPathMetric.length * mainProgress);
-    canvas.drawPath(extractMainPath, paint);
-
-    // First A crossbar
-    if (straightLineProgress1 > 0) {
-      Path crossbarPath1 = Path();
-      crossbarPath1.moveTo(startX + letterWidth * 0.25, centerY - letterHeight * 0.4);
-      crossbarPath1.lineTo(startX + letterWidth * 0.75, centerY - letterHeight * 0.4);
-      ui.PathMetric crossbarPathMetric1 =
-          crossbarPath1.computeMetrics().first;
-      ui.Path extractCrossbarPath1 = crossbarPathMetric1.extractPath(
-          0.0, crossbarPathMetric1.length * straightLineProgress1);
-      canvas.drawPath(extractCrossbarPath1, paint);
+    // Apply smooth animation with proper easing
+    ui.PathMetric pathMetric = mainPath.computeMetrics().first;
+    double animatedLength = pathMetric.length * _easeInOutCubic(progress);
+    
+    if (animatedLength > 0) {
+      ui.Path extractedPath = pathMetric.extractPath(0.0, animatedLength);
+      canvas.drawPath(extractedPath, paint);
     }
+  }
 
-    // Second A crossbar
-    if (straightLineProgress2 > 0) {
-      Path crossbarPath2 = Path();
-      double secondAStartX = startX + letterWidth + letterSpacing * 2;
-      crossbarPath2.moveTo(secondAStartX + letterWidth * 0.25, centerY - letterHeight * 0.4);
-      crossbarPath2.lineTo(secondAStartX + letterWidth * 0.75, centerY - letterHeight * 0.4);
-      ui.PathMetric crossbarPathMetric2 =
-          crossbarPath2.computeMetrics().first;
-      ui.Path extractCrossbarPath2 = crossbarPathMetric2.extractPath(
-          0.0, crossbarPathMetric2.length * straightLineProgress2);
-      canvas.drawPath(extractCrossbarPath2, paint);
+  Path _createFlowingCursiveAIA(double startX, double centerY, double letterWidth, double letterHeight, double letterSpacing, double screenWidth) {
+    Path path = Path();
+    
+    // Start from far left with smooth straight line
+    path.moveTo(50, centerY);
+    
+    // Gentle approach to first A
+    path.cubicTo(
+      startX * 0.3, centerY,
+      startX * 0.7, centerY + 8,
+      startX - 30, centerY
+    );
+    
+    // Slight dip before rising into first A
+    path.cubicTo(
+      startX - 15, centerY + 12,
+      startX, centerY + 8,
+      startX + letterWidth * 0.1, centerY
+    );
+
+    // FIRST A - Wide, rounded arch (like cursive handwriting)
+    // Left leg - smooth upward curve
+    path.cubicTo(
+      startX + letterWidth * 0.2, centerY - letterHeight * 0.3,
+      startX + letterWidth * 0.3, centerY - letterHeight * 0.7,
+      startX + letterWidth * 0.45, centerY - letterHeight * 0.9
+    );
+    
+    // Softly curved apex (NO sharp point!)
+    path.cubicTo(
+      startX + letterWidth * 0.48, centerY - letterHeight * 0.95,
+      startX + letterWidth * 0.52, centerY - letterHeight * 0.95,
+      startX + letterWidth * 0.55, centerY - letterHeight * 0.9
+    );
+    
+    // Right leg - symmetrical downward curve
+    path.cubicTo(
+      startX + letterWidth * 0.7, centerY - letterHeight * 0.7,
+      startX + letterWidth * 0.8, centerY - letterHeight * 0.3,
+      startX + letterWidth * 0.9, centerY
+    );
+
+    // Smooth transition to I (no abrupt changes)
+    double iStartX = startX + letterWidth + letterSpacing;
+    path.cubicTo(
+      startX + letterWidth + letterSpacing * 0.2, centerY + 5,
+      startX + letterWidth + letterSpacing * 0.6, centerY - 3,
+      iStartX, centerY
+    );
+    
+    // LETTER I - Smooth upward arc that gently loops back down (like a soft hill ∩)
+    // Glide up smoothly
+    path.cubicTo(
+      iStartX + letterWidth * 0.1, centerY - letterHeight * 0.1,
+      iStartX + letterWidth * 0.2, centerY - letterHeight * 0.2,
+      iStartX + letterWidth * 0.25, centerY - letterHeight * 0.25
+    );
+    
+    // Gentle rounded top (no sharp point - just a soft curve)
+    path.cubicTo(
+      iStartX + letterWidth * 0.3, centerY - letterHeight * 0.25,
+      iStartX + letterWidth * 0.35, centerY - letterHeight * 0.2,
+      iStartX + letterWidth * 0.4, centerY - letterHeight * 0.1
+    );
+    
+    // Flow back down to baseline smoothly
+    path.cubicTo(
+      iStartX + letterWidth * 0.45, centerY - letterHeight * 0.05,
+      iStartX + letterWidth * 0.5, centerY,
+      iStartX + letterWidth * 0.55, centerY
+    );
+
+    // Smooth transition to second A
+    double secondAStartX = iStartX + letterWidth * 0.4 + letterSpacing;
+    path.cubicTo(
+      iStartX + letterWidth * 0.4 + letterSpacing * 0.2, centerY + 5,
+      iStartX + letterWidth * 0.4 + letterSpacing * 0.6, centerY - 3,
+      secondAStartX - 30, centerY
+    );
+    
+    // Slight dip before rising into second A
+    path.cubicTo(
+      secondAStartX - 15, centerY + 12,
+      secondAStartX, centerY + 8,
+      secondAStartX + letterWidth * 0.1, centerY
+    );
+
+    // SECOND A - Mirror of first A (perfect symmetry)
+    // Left leg - smooth upward curve
+    path.cubicTo(
+      secondAStartX + letterWidth * 0.2, centerY - letterHeight * 0.3,
+      secondAStartX + letterWidth * 0.3, centerY - letterHeight * 0.7,
+      secondAStartX + letterWidth * 0.45, centerY - letterHeight * 0.9
+    );
+    
+    // Softly curved apex (NO sharp point!)
+    path.cubicTo(
+      secondAStartX + letterWidth * 0.48, centerY - letterHeight * 0.95,
+      secondAStartX + letterWidth * 0.52, centerY - letterHeight * 0.95,
+      secondAStartX + letterWidth * 0.55, centerY - letterHeight * 0.9
+    );
+    
+    // Right leg - symmetrical downward curve
+    path.cubicTo(
+      secondAStartX + letterWidth * 0.7, centerY - letterHeight * 0.7,
+      secondAStartX + letterWidth * 0.8, centerY - letterHeight * 0.3,
+      secondAStartX + letterWidth * 0.9, centerY
+    );
+
+    // Smooth extension to the right (elegant exit)
+    path.cubicTo(
+      secondAStartX + letterWidth + 30, centerY - 5,
+      secondAStartX + letterWidth + 80, centerY + 8,
+      screenWidth - 50, centerY
+    );
+
+    return path;
+  }
+
+  // Custom easing function for natural motion
+  double _easeInOutCubic(double t) {
+    if (t < 0.5) {
+      return 4 * t * t * t;
+    } else {
+      return 1 - math.pow(-2 * t + 2, 3) / 2;
     }
   }
 

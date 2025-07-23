@@ -16,7 +16,12 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: AIAAnimationScreen(),
+      home: Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: AIAAnimationScreen(),
+        ),
+      ),
     );
   }
 }
