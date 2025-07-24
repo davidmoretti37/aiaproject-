@@ -34,7 +34,7 @@ class _AdvancedFontTracerState extends State<AdvancedFontTracer>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: widget.animationDuration,
+      duration: const Duration(milliseconds: 3000), // 3 seconds total
       vsync: this,
     );
     _animation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -47,47 +47,53 @@ class _AdvancedFontTracerState extends State<AdvancedFontTracer>
   }
 
   void _generateDancingScriptPath() {
-    // Create a more accurate Dancing Script-style path for "AIA"
+    // Create a seamless A→I→A cursive animation based on ASCII art
     final segments = <PathSegment>[];
     
     // Scale factor based on font size
     final scale = widget.fontSize / 120.0;
     
-    // Letter A (first) - Dancing Script style
-    segments.addAll(_createLetterA(20 * scale, 100 * scale, scale, 0));
+    // Center the animation - adjusted for better alignment
+    final centerOffset = 40 * scale;
     
-    // Connecting flourish
+    // Starting loop before first A
     segments.add(PathSegment(
-      start: Offset(90 * scale, 80 * scale),
-      control1: Offset(110 * scale, 75 * scale),
-      control2: Offset(130 * scale, 75 * scale),
-      end: Offset(150 * scale, 80 * scale),
-      delay: 0.3,
+      start: Offset(centerOffset + 5 * scale, 100 * scale), // Start position
+      control1: Offset(centerOffset + 10 * scale, 108 * scale), // Dip below baseline
+      control2: Offset(centerOffset + 15 * scale, 108 * scale), // Maintain depth for U-shape
+      end: Offset(centerOffset + 20 * scale, 100 * scale), // Where first A will start
+      delay: 0, // Start immediately
     ));
     
-    // Letter I - Dancing Script style
-    segments.addAll(_createLetterI(150 * scale, 80 * scale, scale, 0.35));
+    // Letter A (first) - /\ with crossbar ---
+    // Ends at (90 * scale, 120 * scale) - bottom right
+    segments.addAll(_createLetterA(centerOffset + 20 * scale, 80 * scale, scale, 0.15));
     
-    // Connecting flourish
+    // Smooth U-shaped connecting curve between A and I - proper U with curves
     segments.add(PathSegment(
-      start: Offset(170 * scale, 90 * scale),
-      control1: Offset(190 * scale, 85 * scale),
-      control2: Offset(210 * scale, 85 * scale),
-      end: Offset(230 * scale, 90 * scale),
-      delay: 0.5,
+      start: Offset(centerOffset + 70 * scale, 100 * scale), // End of first A (now narrower)
+      control1: Offset(centerOffset + 75 * scale, 108 * scale), // Dip below baseline for smooth curve
+      control2: Offset(centerOffset + 80 * scale, 108 * scale), // Maintain depth for U-shape
+      end: Offset(centerOffset + 85 * scale, 100 * scale), // Where I will start
+      delay: 0.45, // Start immediately after first A finishes
     ));
     
-    // Letter A (second) - Dancing Script style
-    segments.addAll(_createLetterA(230 * scale, 100 * scale, scale, 0.55));
+    // Letter I - seamless connection from curve, vertical line |
+    // Starts where the curve ends
+    segments.addAll(_createLetterI(centerOffset + 85 * scale, 100 * scale, scale, 0.6)); // Start immediately after curve
     
-    // Final flourish
+    // Letter A (second) - /\ with crossbar ---, closer to A-I
+    segments.addAll(_createLetterA(centerOffset + 100 * scale, 80 * scale, scale, 0.75)); // Start immediately after I
+    
+    // Ending loop after last A
     segments.add(PathSegment(
-      start: Offset(320 * scale, 90 * scale),
-      control1: Offset(340 * scale, 85 * scale),
-      control2: Offset(360 * scale, 95 * scale),
-      end: Offset(380 * scale, 110 * scale),
-      delay: 0.9,
+      start: Offset(centerOffset + 150 * scale, 100 * scale), // Exact end of last A's right stroke
+      control1: Offset(centerOffset + 155 * scale, 108 * scale), // Dip below baseline
+      control2: Offset(centerOffset + 160 * scale, 108 * scale), // Maintain depth for U-shape
+      end: Offset(centerOffset + 165 * scale, 100 * scale), // Final end position
+      delay: 1.05, // Start exactly when last A's right stroke finishes
     ));
+    
     
     setState(() {
       _pathSegments = segments;
@@ -99,51 +105,109 @@ class _AdvancedFontTracerState extends State<AdvancedFontTracer>
   }
 
   List<PathSegment> _createLetterA(double startX, double startY, double scale, double baseDelay) {
+    // Slant factor for italic effect - adds rightward lean as we go up
+    final slant = 15 * scale; // Amount of slant at the top
+    final peakX = startX + 30 * scale + slant; // Exact peak position
+    final peakY = startY - 55 * scale;
+    
     return [
-      // Left stroke of A
+      // Left stroke of A - slanted italic style
       PathSegment(
         start: Offset(startX, startY + 20 * scale),
-        control1: Offset(startX + 10 * scale, startY - 30 * scale),
-        control2: Offset(startX + 25 * scale, startY - 50 * scale),
-        end: Offset(startX + 40 * scale, startY - 40 * scale),
+        control1: Offset(startX + 8 * scale + 8 * scale, startY - 35 * scale), // Add slant
+        control2: Offset(startX + 18 * scale + 12 * scale, startY - 60 * scale), // More slant at top
+        end: Offset(peakX, peakY), // Exact peak position
         delay: baseDelay,
       ),
-      // Right stroke of A
+      // Right stroke of A - slanted italic style (starts from exact same peak)
       PathSegment(
-        start: Offset(startX + 40 * scale, startY - 40 * scale),
-        control1: Offset(startX + 55 * scale, startY - 30 * scale),
-        control2: Offset(startX + 65 * scale, startY),
-        end: Offset(startX + 70 * scale, startY + 20 * scale),
+        start: Offset(peakX, peakY), // Start from exact same peak position
+        control1: Offset(startX + 42 * scale + 10 * scale, startY - 35 * scale), // Slanted control
+        control2: Offset(startX + 48 * scale + 5 * scale, startY), // Less slant as we go down
+        end: Offset(startX + 50 * scale, startY + 20 * scale), // Base stays same
+        delay: baseDelay + 0.15, // Start exactly when left stroke finishes
+      ),
+      // Cross bar of A - slanted to match the italic angle
+      PathSegment(
+        start: Offset(startX + 10 * scale + 3 * scale, startY - 12 * scale),
+        control1: Offset(startX + 20 * scale + 5 * scale, startY - 16 * scale),
+        control2: Offset(startX + 30 * scale + 7 * scale, startY - 20 * scale),
+        end: Offset(startX + 40 * scale + 9 * scale, startY - 24 * scale),
+        delay: baseDelay + 0.1, // Start sooner to reduce gap
+      ),
+    ];
+  }
+
+  List<PathSegment> _createGeometricA(double startX, double startY, double scale, double baseDelay) {
+    return [
+      // Top horizontal line __
+      PathSegment(
+        start: Offset(startX, startY - 40 * scale),
+        control1: Offset(startX + 10 * scale, startY - 40 * scale),
+        control2: Offset(startX + 20 * scale, startY - 40 * scale),
+        end: Offset(startX + 30 * scale, startY - 40 * scale),
+        delay: baseDelay,
+      ),
+      // Left vertical line /
+      PathSegment(
+        start: Offset(startX + 5 * scale, startY - 40 * scale),
+        control1: Offset(startX + 5 * scale, startY - 20 * scale),
+        control2: Offset(startX + 5 * scale, startY),
+        end: Offset(startX + 5 * scale, startY + 20 * scale),
         delay: baseDelay + 0.1,
       ),
-      // Cross bar of A
+      // Middle horizontal line --
       PathSegment(
-        start: Offset(startX + 25 * scale, startY - 10 * scale),
-        control1: Offset(startX + 35 * scale, startY - 15 * scale),
-        control2: Offset(startX + 45 * scale, startY - 15 * scale),
-        end: Offset(startX + 55 * scale, startY - 10 * scale),
+        start: Offset(startX + 5 * scale, startY - 10 * scale),
+        control1: Offset(startX + 12 * scale, startY - 10 * scale),
+        control2: Offset(startX + 18 * scale, startY - 10 * scale),
+        end: Offset(startX + 25 * scale, startY - 10 * scale),
         delay: baseDelay + 0.15,
+      ),
+      // Right vertical line )
+      PathSegment(
+        start: Offset(startX + 25 * scale, startY - 40 * scale),
+        control1: Offset(startX + 25 * scale, startY - 20 * scale),
+        control2: Offset(startX + 25 * scale, startY),
+        end: Offset(startX + 25 * scale, startY + 20 * scale),
+        delay: baseDelay + 0.2,
+      ),
+      // Bottom curve \_
+      PathSegment(
+        start: Offset(startX + 5 * scale, startY + 20 * scale),
+        control1: Offset(startX + 10 * scale, startY + 25 * scale),
+        control2: Offset(startX + 20 * scale, startY + 25 * scale),
+        end: Offset(startX + 25 * scale, startY + 20 * scale),
+        delay: baseDelay + 0.25,
+      ),
+    ];
+  }
+
+  List<PathSegment> _createGeometricI(double startX, double startY, double scale, double baseDelay) {
+    return [
+      // Simple vertical line |
+      PathSegment(
+        start: Offset(startX, startY - 40 * scale),
+        control1: Offset(startX, startY - 20 * scale),
+        control2: Offset(startX, startY),
+        end: Offset(startX, startY + 20 * scale),
+        delay: baseDelay,
       ),
     ];
   }
 
   List<PathSegment> _createLetterI(double startX, double startY, double scale, double baseDelay) {
+    // Slant factor for italic effect
+    final slant = 15 * scale;
+    
     return [
-      // Main stroke of I
+      // Main stroke of I - slanted italic with subtle curve
       PathSegment(
-        start: Offset(startX, startY),
-        control1: Offset(startX + 5 * scale, startY + 15 * scale),
-        control2: Offset(startX + 10 * scale, startY + 25 * scale),
-        end: Offset(startX + 20 * scale, startY + 30 * scale),
+        start: Offset(startX, startY), // Base stays same
+        control1: Offset(startX - 3 * scale + 5 * scale, startY - 25 * scale), // Add slant
+        control2: Offset(startX + 3 * scale + 10 * scale, startY - 50 * scale), // More slant
+        end: Offset(startX + slant, startY - 75 * scale), // Top with full slant
         delay: baseDelay,
-      ),
-      // Dot of I
-      PathSegment(
-        start: Offset(startX + 10 * scale, startY - 20 * scale),
-        control1: Offset(startX + 12 * scale, startY - 22 * scale),
-        control2: Offset(startX + 14 * scale, startY - 22 * scale),
-        end: Offset(startX + 16 * scale, startY - 20 * scale),
-        delay: baseDelay + 0.05,
       ),
     ];
   }
@@ -226,7 +290,8 @@ class _AdvancedPathPainter extends CustomPainter {
       ..strokeJoin = StrokeJoin.round;
 
     for (final segment in pathSegments) {
-      final segmentProgress = math.max(0.0, math.min(1.0, (progress - segment.delay) / 0.1));
+      // Longer duration per segment for smoother animation
+      final segmentProgress = math.max(0.0, math.min(1.0, (progress - segment.delay) / 0.15));
       
       if (segmentProgress > 0) {
         final path = ui.Path();
@@ -240,7 +305,7 @@ class _AdvancedPathPainter extends CustomPainter {
             segment.end.dx, segment.end.dy,
           );
         } else {
-          // Draw partial segment
+          // Draw partial segment with smoother interpolation
           final currentEnd = _interpolateCubicBezier(
             segment.start,
             segment.control1,
@@ -249,8 +314,16 @@ class _AdvancedPathPainter extends CustomPainter {
             segmentProgress,
           );
           
-          final currentControl1 = Offset.lerp(segment.start, segment.control1, segmentProgress)!;
-          final currentControl2 = Offset.lerp(segment.control1, segment.control2, segmentProgress)!;
+          // Smoother control point interpolation
+          final t = segmentProgress;
+          final currentControl1 = Offset(
+            segment.start.dx + (segment.control1.dx - segment.start.dx) * t,
+            segment.start.dy + (segment.control1.dy - segment.start.dy) * t,
+          );
+          final currentControl2 = Offset(
+            segment.control1.dx + (segment.control2.dx - segment.control1.dx) * t,
+            segment.control1.dy + (segment.control2.dy - segment.control1.dy) * t,
+          );
           
           path.cubicTo(
             currentControl1.dx, currentControl1.dy,

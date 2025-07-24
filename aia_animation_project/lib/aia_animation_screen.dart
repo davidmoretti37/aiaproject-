@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'aia_animation.dart';
 import 'orb_all_in_one.dart';
+import 'breath_fog_effect.dart';
 
 class AIAAnimationScreen extends StatefulWidget {
   @override
@@ -9,6 +10,7 @@ class AIAAnimationScreen extends StatefulWidget {
 
 class _AIAAnimationScreenState extends State<AIAAnimationScreen> with TickerProviderStateMixin {
   bool _showOrb = false;
+  bool _showFogEffect = false;
   late AnimationController _orbAnimationController;
   late Animation<double> _orbAnimation;
   late OrbController _orbController;
@@ -32,6 +34,15 @@ class _AIAAnimationScreenState extends State<AIAAnimationScreen> with TickerProv
     _orbAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _orbAnimationController, curve: Curves.easeInOut),
     );
+    
+    // Show fog effect after AIA animation completes (approximately 4 seconds)
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted) {
+        setState(() {
+          _showFogEffect = true;
+        });
+      }
+    });
     
     // Show orb after AIA animation completes (approximately 6 seconds)
     Future.delayed(const Duration(seconds: 6), () {
@@ -61,6 +72,19 @@ class _AIAAnimationScreenState extends State<AIAAnimationScreen> with TickerProv
           Center(
             child: AIAAnimation(),
           ),
+          // Breath fog effect that appears after AIA animation
+          if (_showFogEffect)
+            Center(
+              child: BreathFogEffect(
+                isActive: _showFogEffect,
+                duration: const Duration(seconds: 4),
+                child: Container(
+                  width: 400,
+                  height: 300,
+                  // Transparent container to define the fog area
+                ),
+              ),
+            ),
           // Orb that appears after animation
           if (_showOrb)
             Center(

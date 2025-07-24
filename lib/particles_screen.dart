@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import 'flutter_particles.dart';
+import 'advanced_font_tracer.dart';
 
 class ParticlesScreen extends StatelessWidget {
   @override
@@ -17,45 +18,36 @@ class ParticlesScreen extends StatelessWidget {
               ),
             ),
           ),
-          // Blur filter overlay - increased blur for more effect
+          // Blur filter overlay - much more blur to hide trees
           BackdropFilter(
-            filter: ui.ImageFilter.blur(sigmaX: 15.0, sigmaY: 15.0), // Increased from default blur
+            filter: ui.ImageFilter.blur(sigmaX: 25.0, sigmaY: 25.0), // Much higher blur to hide trees
             child: Container(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.2),
             ),
           ),
           // Particles overlay
           FlutterParticles(
             particleColors: [
-              Colors.white.withOpacity(0.8),
-              Colors.blue.withOpacity(0.6),
-              Colors.cyan.withOpacity(0.4),
+              Colors.grey.shade300.withOpacity(0.9),
+              Colors.grey.shade400.withOpacity(0.8),
+              Colors.grey.shade500.withOpacity(0.7),
             ],
-            particleCount: 150,
-            particleSpread: 8.0,
-            speed: 0.05,
+            particleCount: 300,
+            particleSpread: 4.0,
+            speed: 0.45,
             particleBaseSize: 80.0,
             moveParticlesOnHover: true,
             alphaParticles: true,
             sizeRandomness: 0.8,
           ),
-          // AIA Text overlay
+          // Animated Cursive AIA overlay
           Center(
-            child: Text(
-              'AIA',
-              style: TextStyle(
-                fontSize: 120,
-                fontWeight: FontWeight.bold,
-                color: Colors.white.withOpacity(0.9),
-                letterSpacing: 8.0,
-                shadows: [
-                  Shadow(
-                    offset: Offset(2.0, 2.0),
-                    blurRadius: 4.0,
-                    color: Colors.black.withOpacity(0.5),
-                  ),
-                ],
-              ),
+            child: AdvancedFontTracer(
+              text: 'AIA',
+              fontSize: 180, // Increased from 120 to make it bigger
+              animationDuration: Duration(seconds: 4),
+              traceColor: Colors.white, // Bold solid white - no opacity
+              strokeWidth: 8.0, // Also increased stroke width for better visibility
             ),
           ),
         ],
