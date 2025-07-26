@@ -83,7 +83,7 @@ class AIAPainter extends CustomPainter {
     double totalWidth = letterWidth * 2.8 + letterSpacing * 2;
     double startX = (size.width - totalWidth) / 2;
 
-    Path mainPath = _createFluidCursiveAIA(startX, baselineY, letterWidth, letterHeight, letterSpacing, size.width);
+    Path mainPath = _createFluidCursiveLowercaseAIA(startX, baselineY, letterWidth, letterHeight, letterSpacing, size.width);
 
     // Apply smooth animation
     ui.PathMetric pathMetric = mainPath.computeMetrics().first;
@@ -95,10 +95,10 @@ class AIAPainter extends CustomPainter {
     }
   }
 
-  Path _createFluidCursiveAIA(double startX, double centerY, double letterWidth, double letterHeight, double letterSpacing, double screenWidth) {
+  Path _createFluidCursiveLowercaseAIA(double startX, double centerY, double letterWidth, double letterHeight, double letterSpacing, double screenWidth) {
     Path path = Path();
     
-    // 1. SMOOTH ENTRY STROKE - flowing intro like a signature (steady baseline)
+    // 1. SMOOTH ENTRY STROKE - flowing intro like a signature
     path.moveTo(50, centerY);
     path.cubicTo(
       startX * 0.2, centerY + 2,
@@ -106,166 +106,51 @@ class AIAPainter extends CustomPainter {
       startX - 20, centerY
     );
 
-    // 2. FIRST A - True cursive loop/teardrop style
-    // Start with slightly curved line moving left to right (soft hill)
-    path.cubicTo(
-      startX - 10, centerY,
-      startX + letterWidth * 0.1, centerY - 5,
-      startX + letterWidth * 0.2, centerY - 8
-    );
-    
-    // Gently swoop down, then curve upward diagonally
-    path.cubicTo(
-      startX + letterWidth * 0.25, centerY + 5,
-      startX + letterWidth * 0.3, centerY - letterHeight * 0.2,
-      startX + letterWidth * 0.4, centerY - letterHeight * 0.7
-    );
-    
-    // Continue upward curve to peak
-    path.cubicTo(
-      startX + letterWidth * 0.42, centerY - letterHeight * 0.85,
-      startX + letterWidth * 0.45, centerY - letterHeight * 0.95,
-      startX + letterWidth * 0.5, centerY - letterHeight * 0.98
-    );
-    
-    // Rounded arch at top (like a teardrop, not sharp point)
-    path.cubicTo(
-      startX + letterWidth * 0.52, centerY - letterHeight,
-      startX + letterWidth * 0.58, centerY - letterHeight,
-      startX + letterWidth * 0.6, centerY - letterHeight * 0.98
-    );
-    
-    // Curve downward in mirrored motion
-    path.cubicTo(
-      startX + letterWidth * 0.65, centerY - letterHeight * 0.95,
-      startX + letterWidth * 0.68, centerY - letterHeight * 0.85,
-      startX + letterWidth * 0.7, centerY - letterHeight * 0.7
-    );
-    
-    // Continue down to middle height where bridge connects
-    path.cubicTo(
-      startX + letterWidth * 0.75, centerY - letterHeight * 0.6,
-      startX + letterWidth * 0.7, centerY - letterHeight * 0.5,
-      startX + letterWidth * 0.65, centerY - letterHeight * 0.5
-    );
-    
-    // CURSIVE BRIDGE - single smooth horizontal curve like lowercase "n"
-    path.cubicTo(
-      startX + letterWidth * 0.55, centerY - letterHeight * 0.4,
-      startX + letterWidth * 0.45, centerY - letterHeight * 0.4,
-      startX + letterWidth * 0.35, centerY - letterHeight * 0.5
-    );
-    
-    // Continue down to baseline from right leg
-    path.cubicTo(
-      startX + letterWidth * 0.7, centerY - letterHeight * 0.5,
-      startX + letterWidth * 0.8, centerY - letterHeight * 0.2,
-      startX + letterWidth * 0.9, centerY - 8
-    );
-    
-    // Smooth connection ending on baseline
-    path.cubicTo(
-      startX + letterWidth * 0.95, centerY - 5,
-      startX + letterWidth, centerY,
-      startX + letterWidth, centerY
-    );
+    // 2. FIRST 'a' - lowercase cursive 'a' with circular body and tail
+    _addLetterA(path, startX, centerY, letterWidth, letterHeight);
 
-    // 3. MIDDLE I - Very short and simple (half height of A)
+    // 3. MIDDLE 'i' - simple lowercase cursive 'i'
     double iStartX = startX + letterWidth + letterSpacing;
     
-    // Smooth transition
+    // Smooth transition to 'i'
     path.cubicTo(
       startX + letterWidth + letterSpacing * 0.3, centerY + 3,
       startX + letterWidth + letterSpacing * 0.7, centerY - 3,
       iStartX, centerY
     );
     
-    // Small loop - soft arc up then down (like cursive 'i')
+    // Simple upstroke for 'i'
     path.cubicTo(
-      iStartX + letterWidth * 0.1, centerY - letterHeight * 0.25,
-      iStartX + letterWidth * 0.2, centerY - letterHeight * 0.45,
-      iStartX + letterWidth * 0.25, centerY - letterHeight * 0.47
+      iStartX + letterWidth * 0.1, centerY - letterHeight * 0.1,
+      iStartX + letterWidth * 0.2, centerY - letterHeight * 0.3,
+      iStartX + letterWidth * 0.25, centerY - letterHeight * 0.35
     );
     
-    // Curve back down smoothly
+    // Small curve at top and back down
     path.cubicTo(
-      iStartX + letterWidth * 0.3, centerY - letterHeight * 0.45,
-      iStartX + letterWidth * 0.4, centerY - letterHeight * 0.25,
+      iStartX + letterWidth * 0.3, centerY - letterHeight * 0.35,
+      iStartX + letterWidth * 0.35, centerY - letterHeight * 0.3,
+      iStartX + letterWidth * 0.4, centerY - letterHeight * 0.1
+    );
+    
+    // Back to baseline
+    path.cubicTo(
+      iStartX + letterWidth * 0.42, centerY,
+      iStartX + letterWidth * 0.45, centerY,
       iStartX + letterWidth * 0.45, centerY
     );
 
-    // 4. SECOND A - Same cursive loop/teardrop style as first A
+    // 4. SECOND 'a' - Same lowercase cursive 'a' as first
     double secondAStartX = iStartX + letterWidth * 0.45 + letterSpacing;
     
-    // Smooth transition
+    // Smooth transition to second 'a'
     path.cubicTo(
       iStartX + letterWidth * 0.45 + letterSpacing * 0.3, centerY + 3,
       iStartX + letterWidth * 0.45 + letterSpacing * 0.7, centerY - 3,
       secondAStartX - 20, centerY
     );
     
-    // Start with slightly curved line moving left to right (soft hill)
-    path.cubicTo(
-      secondAStartX - 10, centerY,
-      secondAStartX + letterWidth * 0.1, centerY - 5,
-      secondAStartX + letterWidth * 0.2, centerY - 8
-    );
-    
-    // Gently swoop down, then curve upward diagonally
-    path.cubicTo(
-      secondAStartX + letterWidth * 0.25, centerY + 5,
-      secondAStartX + letterWidth * 0.3, centerY - letterHeight * 0.2,
-      secondAStartX + letterWidth * 0.4, centerY - letterHeight * 0.7
-    );
-    
-    // Continue upward curve to peak
-    path.cubicTo(
-      secondAStartX + letterWidth * 0.42, centerY - letterHeight * 0.85,
-      secondAStartX + letterWidth * 0.45, centerY - letterHeight * 0.95,
-      secondAStartX + letterWidth * 0.5, centerY - letterHeight * 0.98
-    );
-    
-    // Rounded arch at top (like a teardrop, not sharp point)
-    path.cubicTo(
-      secondAStartX + letterWidth * 0.52, centerY - letterHeight,
-      secondAStartX + letterWidth * 0.58, centerY - letterHeight,
-      secondAStartX + letterWidth * 0.6, centerY - letterHeight * 0.98
-    );
-    
-    // Curve downward in mirrored motion
-    path.cubicTo(
-      secondAStartX + letterWidth * 0.65, centerY - letterHeight * 0.95,
-      secondAStartX + letterWidth * 0.68, centerY - letterHeight * 0.85,
-      secondAStartX + letterWidth * 0.7, centerY - letterHeight * 0.7
-    );
-    
-    // Continue down to middle height where bridge connects
-    path.cubicTo(
-      secondAStartX + letterWidth * 0.75, centerY - letterHeight * 0.6,
-      secondAStartX + letterWidth * 0.7, centerY - letterHeight * 0.5,
-      secondAStartX + letterWidth * 0.65, centerY - letterHeight * 0.5
-    );
-    
-    // CURSIVE BRIDGE - single smooth horizontal curve like lowercase "n"
-    path.cubicTo(
-      secondAStartX + letterWidth * 0.55, centerY - letterHeight * 0.4,
-      secondAStartX + letterWidth * 0.45, centerY - letterHeight * 0.4,
-      secondAStartX + letterWidth * 0.35, centerY - letterHeight * 0.5
-    );
-    
-    // Continue down to baseline from right leg
-    path.cubicTo(
-      secondAStartX + letterWidth * 0.7, centerY - letterHeight * 0.5,
-      secondAStartX + letterWidth * 0.8, centerY - letterHeight * 0.2,
-      secondAStartX + letterWidth * 0.9, centerY - 8
-    );
-    
-    // Smooth connection ending on baseline
-    path.cubicTo(
-      secondAStartX + letterWidth * 0.95, centerY - 5,
-      secondAStartX + letterWidth, centerY,
-      secondAStartX + letterWidth, centerY
-    );
+    _addLetterA(path, secondAStartX, centerY, letterWidth, letterHeight);
 
     // 5. GRACEFUL EXIT STROKE - like signature trail-off
     path.cubicTo(
@@ -275,6 +160,101 @@ class AIAPainter extends CustomPainter {
     );
 
     return path;
+  }
+
+  void _addLetterA(Path path, double startX, double centerY, double letterWidth, double letterHeight) {
+    // Define the circular path points for reuse
+    List<Map<String, dynamic>> circlePoints = _getCirclePoints(startX, centerY, letterWidth, letterHeight);
+    
+    // Draw the circular body first
+    _drawCircularBody(path, circlePoints);
+    
+    // Draw the stem that overlaps with the circle using exact same coordinates
+    _drawStemWithOverlap(path, circlePoints, startX, centerY, letterWidth, letterHeight);
+  }
+
+  List<Map<String, dynamic>> _getCirclePoints(double startX, double centerY, double letterWidth, double letterHeight) {
+    return [
+      // Entry to circle
+      {
+        'type': 'cubicTo',
+        'cp1x': startX - 10, 'cp1y': centerY,
+        'cp2x': startX + letterWidth * 0.1, 'cp2y': centerY - letterHeight * 0.1,
+        'x': startX + letterWidth * 0.2, 'y': centerY - letterHeight * 0.3
+      },
+      // Left side going up to top
+      {
+        'type': 'cubicTo',
+        'cp1x': startX + letterWidth * 0.3, 'cp1y': centerY - letterHeight * 0.5,
+        'cp2x': startX + letterWidth * 0.5, 'cp2y': centerY - letterHeight * 0.5,
+        'x': startX + letterWidth * 0.7, 'y': centerY - letterHeight * 0.3
+      },
+      // Right side going down
+      {
+        'type': 'cubicTo',
+        'cp1x': startX + letterWidth * 0.8, 'cp1y': centerY - letterHeight * 0.1,
+        'cp2x': startX + letterWidth * 0.8, 'cp2y': centerY + letterHeight * 0.1,
+        'x': startX + letterWidth * 0.7, 'y': centerY + letterHeight * 0.2
+      },
+      // Bottom curve
+      {
+        'type': 'cubicTo',
+        'cp1x': startX + letterWidth * 0.5, 'cp1y': centerY + letterHeight * 0.3,
+        'cp2x': startX + letterWidth * 0.3, 'cp2y': centerY + letterHeight * 0.3,
+        'x': startX + letterWidth * 0.2, 'y': centerY + letterHeight * 0.1
+      }
+    ];
+  }
+
+  void _drawCircularBody(Path path, List<Map<String, dynamic>> circlePoints) {
+    for (var point in circlePoints) {
+      if (point['type'] == 'cubicTo') {
+        path.cubicTo(
+          point['cp1x'], point['cp1y'],
+          point['cp2x'], point['cp2y'],
+          point['x'], point['y']
+        );
+      }
+    }
+  }
+
+  void _drawStemWithOverlap(Path path, List<Map<String, dynamic>> circlePoints, double startX, double centerY, double letterWidth, double letterHeight) {
+    // Connect from end of circle to start of stem - this part follows the circle path exactly
+    // We need to trace back along the circle path for the overlap
+    
+    // From the end of the circular body, go back up following the exact same path
+    // Start from where the circle ended: startX + letterWidth * 0.2, centerY + letterHeight * 0.1
+    
+    // Trace back along the left side of the circle (reverse of the bottom curve)
+    path.cubicTo(
+      startX + letterWidth * 0.15, centerY - letterHeight * 0.1,
+      startX + letterWidth * 0.2, centerY - letterHeight * 0.3,
+      startX + letterWidth * 0.3, centerY - letterHeight * 0.4
+    );
+    
+    // Continue up the stem beyond the circle
+    path.cubicTo(
+      startX + letterWidth * 0.4, centerY - letterHeight * 0.45,
+      startX + letterWidth * 0.6, centerY - letterHeight * 0.45,
+      startX + letterWidth * 0.75, centerY - letterHeight * 0.4
+    );
+    
+    // Now trace back down through the circle using EXACT same coordinates as the original circle
+    // This creates the true overlap - we follow the right side of the circle exactly
+    
+    // From top of stem, follow the exact path of the right side of the circle
+    path.cubicTo(
+      startX + letterWidth * 0.7, centerY - letterHeight * 0.3,  // Same as circle point 2 end
+      startX + letterWidth * 0.8, centerY - letterHeight * 0.1,  // Same as circle point 3 cp1
+      startX + letterWidth * 0.8, centerY + letterHeight * 0.1   // Same as circle point 3 cp2
+    );
+    
+    // Continue down the right side
+    path.cubicTo(
+      startX + letterWidth * 0.8, centerY + letterHeight * 0.15,
+      startX + letterWidth * 0.85, centerY,
+      startX + letterWidth * 0.9, centerY
+    );
   }
 
   // Custom easing function for natural motion

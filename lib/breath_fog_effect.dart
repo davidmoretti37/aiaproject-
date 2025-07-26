@@ -6,12 +6,14 @@ class BreathFogEffect extends StatefulWidget {
   final Widget child;
   final bool isActive;
   final Duration duration;
+  final bool persistent;
 
   const BreathFogEffect({
     Key? key,
     required this.child,
     this.isActive = true,
     this.duration = const Duration(seconds: 3),
+    this.persistent = false,
   }) : super(key: key);
 
   @override
@@ -55,19 +57,19 @@ class _BreathFogEffectState extends State<BreathFogEffect>
       curve: Curves.easeInOutSine,
     ));
 
-    // Fog opacity animation
+    // Fog opacity animation - reduced for subtler effect
     _fogOpacity = Tween<double>(
       begin: 0.0,
-      end: 0.8,
+      end: 0.5, // Reduced from 0.8 to 0.5
     ).animate(CurvedAnimation(
       parent: _fogController,
       curve: Interval(0.0, 0.3, curve: Curves.easeOut),
     ));
 
-    // Fog scale animation (grows and disperses)
+    // Fog scale animation (grows and disperses) - more concentrated
     _fogScale = Tween<double>(
       begin: 0.1,
-      end: 2.5,
+      end: 1.5, // Reduced from 1.8 to 1.5 for less expansion
     ).animate(CurvedAnimation(
       parent: _fogController,
       curve: Curves.easeOutCubic,
@@ -76,7 +78,7 @@ class _BreathFogEffectState extends State<BreathFogEffect>
     // Fog blur animation (starts sharp, becomes blurry)
     _fogBlur = Tween<double>(
       begin: 0.0,
-      end: 8.0,
+      end: 6.0, // Reduced from 8.0 to 6.0 for less blur
     ).animate(CurvedAnimation(
       parent: _fogController,
       curve: Interval(0.2, 1.0, curve: Curves.easeOut),
@@ -93,34 +95,40 @@ class _BreathFogEffectState extends State<BreathFogEffect>
     final random = math.Random();
     _fogParticles = List.generate(_particleCount, (index) {
       return FogParticle(
-        x: random.nextDouble() * 200 - 100, // Spread around center
-        y: random.nextDouble() * 100 - 50,
-        size: random.nextDouble() * 30 + 10,
-        opacity: random.nextDouble() * 0.6 + 0.2,
-        speed: random.nextDouble() * 0.5 + 0.2,
+        x: random.nextDouble() * 180 - 90, // Noticeably wider spread
+        y: random.nextDouble() * 120 - 60, // More vertical spread
+        size: random.nextDouble() * 28 + 16, // Slightly smaller particles
+        opacity: random.nextDouble() * 0.3 + 0.3, // Lower opacity range
+        speed: random.nextDouble() * 0.3 + 0.1, // Slower movement
         direction: random.nextDouble() * 2 * math.pi,
       );
     });
   }
 
   void _startBreathCycle() {
-    _breathController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        // Trigger fog effect at the end of exhale
-        _fogController.forward().then((_) {
-          _fogController.reset();
-          // Wait a bit before next breath
-          Future.delayed(Duration(milliseconds: 800), () {
-            if (mounted && widget.isActive) {
-              _breathController.reset();
-              _breathController.forward();
-            }
+    if (widget.persistent) {
+      // For persistent mode, just show the fog once and keep it
+      _fogController.forward();
+    } else {
+      // For cycling mode, repeat the breath cycle
+      _breathController.addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          // Trigger fog effect at the end of exhale
+          _fogController.forward().then((_) {
+            _fogController.reset();
+            // Wait a bit before next breath
+            Future.delayed(Duration(milliseconds: 800), () {
+              if (mounted && widget.isActive) {
+                _breathController.reset();
+                _breathController.forward();
+              }
+            });
           });
-        });
-      }
-    });
-    
-    _breathController.forward();
+        }
+      });
+      
+      _breathController.forward();
+    }
   }
 
   @override
@@ -211,73 +219,91 @@ class FogPainter extends CustomPainter {
     final centerX = size.width / 2;
     final centerY = size.height / 2;
 
-    // Create fog gradient
-    final fogGradient = ui.Gradient.radial(
+    // Create a single unified breath fog cloud with multiple layers for realism
+    
+    // Core dense fog layer - reduced opacity
+    final coreFogGradient = ui.Gradient.radial(
       Offset(centerX, centerY),
-      100 * scale,
+      60 * scale,
       [
-        Colors.white.withOpacity(opacity * 0.8),
-        Colors.white.withOpacity(opacity * 0.4),
-        Colors.white.withOpacity(opacity * 0.1),
+        Colors.white.withOpacity(opacity * 0.7), // Reduced from 0.9
+        Colors.white.withOpacity(opacity * 0.4), // Reduced from 0.6
+        Colors.white.withOpacity(opacity * 0.2), // Reduced from 0.3
         Colors.transparent,
       ],
-      [0.0, 0.3, 0.7, 1.0],
+      [0.0, 0.4, 0.7, 1.0],
     );
 
-    // Main fog cloud
-    final fogPaint = Paint()
-      ..shader = fogGradient
-      ..maskFilter = MaskFilter.blur(BlurStyle.normal, blur);
+    final coreFogPaint = Paint()
+      ..shader = coreFogGradient
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, blur * 0.8);
 
-    // Draw main fog cloud
+    // Draw core fog cloud
     canvas.drawCircle(
       Offset(centerX, centerY),
-      80 * scale,
-      fogPaint,
+      65 * scale, // Slightly smaller radius
+      coreFogPaint,
     );
 
-    // Draw individual fog particles
-    for (int i = 0; i < particles.length; i++) {
-      final particle = particles[i];
-      
-      // Animate particle position based on fog expansion
-      final animatedX = centerX + (particle.x * scale);
-      final animatedY = centerY + (particle.y * scale);
-      
-      // Create particle gradient
-      final particleGradient = ui.Gradient.radial(
-        Offset(animatedX, animatedY),
-        particle.size * scale,
-        [
-          Colors.white.withOpacity(opacity * particle.opacity * 0.6),
-          Colors.white.withOpacity(opacity * particle.opacity * 0.2),
-          Colors.transparent,
-        ],
-        [0.0, 0.6, 1.0],
-      );
+    // Middle diffuse layer - reduced opacity
+    final middleFogGradient = ui.Gradient.radial(
+      Offset(centerX, centerY),
+      85 * scale, // Slightly smaller radius
+      [
+        Colors.white.withOpacity(opacity * 0.4), // Reduced from 0.5
+        Colors.white.withOpacity(opacity * 0.2), // Reduced from 0.3
+        Colors.white.withOpacity(opacity * 0.1), // Reduced from 0.15
+        Colors.transparent,
+      ],
+      [0.0, 0.3, 0.6, 1.0],
+    );
 
-      final particlePaint = Paint()
-        ..shader = particleGradient
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, blur * 0.5);
+    final middleFogPaint = Paint()
+      ..shader = middleFogGradient
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, blur);
 
-      canvas.drawCircle(
-        Offset(animatedX, animatedY),
-        particle.size * scale * 0.8,
-        particlePaint,
-      );
-    }
+    // Draw middle fog layer
+    canvas.drawCircle(
+      Offset(centerX, centerY),
+      95 * scale, // Slightly smaller radius
+      middleFogPaint,
+    );
 
-    // Add subtle condensation effect
-    if (scale > 1.5) {
-      final condensationPaint = Paint()
-        ..color = Colors.white.withOpacity(opacity * 0.1)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, blur * 2);
+    // Outer dispersed layer - reduced opacity
+    final outerFogGradient = ui.Gradient.radial(
+      Offset(centerX, centerY),
+      115 * scale, // Slightly smaller radius
+      [
+        Colors.white.withOpacity(opacity * 0.2), // Reduced from 0.3
+        Colors.white.withOpacity(opacity * 0.1), // Reduced from 0.15
+        Colors.white.withOpacity(opacity * 0.03), // Reduced from 0.05
+        Colors.transparent,
+      ],
+      [0.0, 0.2, 0.5, 1.0],
+    );
 
-      // Draw larger, more diffuse condensation area
+    final outerFogPaint = Paint()
+      ..shader = outerFogGradient
+      ..maskFilter = MaskFilter.blur(BlurStyle.normal, blur * 1.5);
+
+    // Draw outer fog layer
+    canvas.drawCircle(
+      Offset(centerX, centerY),
+      125 * scale, // Slightly smaller radius
+      outerFogPaint,
+    );
+
+    // Add very subtle edge wisps for realism (but keep it as one unified cloud)
+    if (scale > 1.2) {
+      final wispPaint = Paint()
+        ..color = Colors.white.withOpacity(opacity * 0.05) // Reduced from 0.08
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, blur * 2.0); // Reduced blur
+
+      // Draw subtle edge wisps
       canvas.drawCircle(
         Offset(centerX, centerY),
-        150 * scale,
-        condensationPaint,
+        150 * scale, // Slightly smaller radius
+        wispPaint,
       );
     }
   }

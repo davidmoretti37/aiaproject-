@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'particles_screen.dart';
+import 'cinematic_intro_screen.dart';
 
 void main() {
   runApp(MyApp());
@@ -9,11 +9,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AIA Animation',
+      title: 'AIA Cinematic Intro Sequence',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: ParticlesScreen(),
+      home: CinematicIntroScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

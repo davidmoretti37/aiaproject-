@@ -1,9 +1,41 @@
 import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 import 'flutter_particles.dart';
-import 'advanced_font_tracer.dart';
+import 'lottie_aia_animation.dart';
+import 'breath_fog_effect.dart';
 
-class ParticlesScreen extends StatelessWidget {
+class ParticlesScreen extends StatefulWidget {
+  @override
+  _ParticlesScreenState createState() => _ParticlesScreenState();
+}
+
+class _ParticlesScreenState extends State<ParticlesScreen> {
+  bool _showFogEffect = false;
+  bool _showAIAText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    // Start fog effect first (after 2 seconds)
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _showFogEffect = true;
+        });
+      }
+    });
+    
+    // Then start AIA text animation after fog appears (after 4 seconds total)
+    Future.delayed(const Duration(seconds: 4), () {
+      if (mounted) {
+        setState(() {
+          _showAIAText = true;
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -40,16 +72,21 @@ class ParticlesScreen extends StatelessWidget {
             alphaParticles: true,
             sizeRandomness: 0.8,
           ),
-          // Animated Cursive AIA overlay
-          Center(
-            child: AdvancedFontTracer(
-              text: 'AIA',
-              fontSize: 180, // Increased from 120 to make it bigger
-              animationDuration: Duration(seconds: 4),
-              traceColor: Colors.white, // Bold solid white - no opacity
-              strokeWidth: 8.0, // Also increased stroke width for better visibility
+          // Breath fog effect overlay (appears under AIA text, over background)
+          if (_showFogEffect)
+            Positioned.fill(
+              child: BreathFogEffect(
+                isActive: _showFogEffect,
+                duration: const Duration(seconds: 3),
+                persistent: true, // Keep the fog visible once it appears
+                child: Container(), // Transparent container for fog area
+              ),
             ),
-          ),
+          // Lottie AIA animation overlay (on top of fog effect)
+          if (_showAIAText)
+            Center(
+              child: LottieAIAAnimation(),
+            ),
         ],
       ),
     );
