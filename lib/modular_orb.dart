@@ -172,10 +172,7 @@ class ModularOrbPainter extends CustomPainter {
       double dotRadius = lerpDouble(2.0, 4.5, pulse)! * perspective;
       double opacity = lerpDouble(0.5, 1.0, pulse)! * (0.7 + 0.3 * (zRot + 1) / 2);
 
-      Color baseColor = Color.lerp(
-        Color(0xFFE0E0E0), Colors.white, 0.7 + 0.3 * (zRot + 1) / 2,
-      )!;
-      baseColor = Color.lerp(baseColor, Color(0xFFB0C4DE), 0.15)!;
+      Color baseColor = Colors.white;
 
       paint.color = baseColor.withOpacity(opacity.clamp(0.0, 1.0));
       canvas.drawCircle(dotPos, dotRadius, paint);

@@ -18,6 +18,7 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
   late final AnimationController _zoomController;
   late final AnimationController _orbRevealController;
   late final AnimationController _orbScaleController;
+  late final AnimationController _grayToBlackController;
   late final OrbController _orbController;
   
   late final Animation<double> _zoomScale;
@@ -26,6 +27,8 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
   late final Animation<double> _orbOpacity;
   late final Animation<double> _orbScale;
   late final Animation<double> _backgroundTransition;
+  late final Animation<double> _grayFadeOut;
+  late final Animation<double> _grayRadius;
   
   bool _startFogEffect = false;
   bool _startZoom = false;
@@ -55,6 +58,11 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
     _orbScaleController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1000), // Reduced from 1.2 seconds to 1 second
+    );
+    
+    _grayToBlackController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2000), // 2 seconds for smooth gray-to-black transition
     );
     
     _orbController = OrbController(
@@ -113,6 +121,23 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
       curve: Curves.elasticOut,
     ));
     
+    // Initialize gray-to-black transition animations
+    _grayFadeOut = Tween<double>(
+      begin: 1.0,
+      end: 0.0,
+    ).animate(CurvedAnimation(
+      parent: _grayToBlackController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _grayRadius = Tween<double>(
+      begin: 1.0,
+      end: 0.3,
+    ).animate(CurvedAnimation(
+      parent: _grayToBlackController,
+      curve: Curves.easeInCubic,
+    ));
+    
     // Listen for animation completions
     _lottieController.addStatusListener((status) {
       if (status == AnimationStatus.completed && !_lottieCompleted) {
@@ -169,20 +194,28 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
 
   void _revealOrb() async {
     if (mounted) {
-      setState(() {
-        _showOrb = true;
-      });
+      // Start the gray-to-black transition immediately when zoom completes
+      _grayToBlackController.forward();
       
-      // Enable magnet effect on the orb
-      _orbController.setMagnetEnabled(true);
+      // Small delay before showing orb to let gray fade start
+      await Future.delayed(const Duration(milliseconds: 500));
       
-      // Start orb reveal and scale animations
-      _orbRevealController.forward();
-      
-      // Reduced delay for faster orb scaling
-      await Future.delayed(const Duration(milliseconds: 200));
       if (mounted) {
-        _orbScaleController.forward();
+        setState(() {
+          _showOrb = true;
+        });
+        
+        // Enable magnet effect on the orb
+        _orbController.setMagnetEnabled(true);
+        
+        // Start orb reveal and scale animations
+        _orbRevealController.forward();
+        
+        // Reduced delay for faster orb scaling
+        await Future.delayed(const Duration(milliseconds: 200));
+        if (mounted) {
+          _orbScaleController.forward();
+        }
       }
     }
   }
@@ -193,6 +226,7 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
     _zoomController.dispose();
     _orbRevealController.dispose();
     _orbScaleController.dispose();
+    _grayToBlackController.dispose();
     _orbController.dispose();
     super.dispose();
   }
@@ -200,7 +234,7 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF000000), // Pure black
       body: AnimatedBuilder(
         animation: Listenable.merge([
           _zoomController,
@@ -210,13 +244,13 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
         builder: (context, child) {
           return Stack(
             children: [
-              // Background transition from forest to black
+              // Background transition from forest to deep black
               Container(
                 width: double.infinity,
                 height: double.infinity,
                 color: Color.lerp(
                   Colors.transparent,
-                  Colors.black,
+                  const Color(0xFF000000), // Pure black
                   _backgroundTransition.value,
                 ),
               ),
@@ -267,24 +301,67 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
               
               // Lottie Hello Animation (only visible before zoom)
               if (!_startZoom)
-                Center(
-                  child: Container(
-                    padding: const EdgeInsets.all(40),
-                    child: Lottie.asset(
-                      'assets/aia_text_animation.json',
-                      controller: _lottieController,
-                      width: 700,
-                      height: 400,
-                      fit: BoxFit.contain,
-                      onLoaded: (composition) {
-                        // Don't override our custom duration - keep it at 2.5 seconds
-                        if (!_lottieController.isAnimating) {
-                          _lottieController.forward();
-                        }
-                      },
+                Positioned.fill(
+                  child: Transform.scale(
+                    scale: 2.0, // 200% scale - perfect balance!
+                    child: Container(
+                      padding: const EdgeInsets.all(0), // No padding for maximum size
+                      child: Lottie.asset(
+                        'assets/aia_text_animation.json',
+                        controller: _lottieController,
+                        width: MediaQuery.of(context).size.width, // Full screen width
+                        height: MediaQuery.of(context).size.height, // Full screen height
+                        fit: BoxFit.contain,
+                        onLoaded: (composition) {
+                          // Don't override our custom duration - keep it at 2.5 seconds
+                          if (!_lottieController.isAnimating) {
+                            _lottieController.forward();
+                          }
+                        },
+                      ),
                     ),
                   ),
                 ),
+              
+              // Smooth gray-to-black transition overlay
+              AnimatedBuilder(
+                animation: _grayToBlackController,
+                builder: (context, child) {
+                  return Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: RadialGradient(
+                        center: Alignment.center,
+                        radius: _grayRadius.value,
+                        colors: [
+                          // Gradually transition from gray to black
+                          Color.lerp(Colors.grey, Colors.black, 1.0 - _grayFadeOut.value)!.withOpacity(0.7 * _grayFadeOut.value),
+                          Color.lerp(Colors.grey, Colors.black, 1.0 - _grayFadeOut.value)!.withOpacity(0.4 * _grayFadeOut.value),
+                          Color.lerp(Colors.grey, Colors.black, 1.0 - _grayFadeOut.value)!.withOpacity(0.1 * _grayFadeOut.value),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.3, 0.6, 1.0],
+                      ),
+                    ),
+                  );
+                },
+              ),
+              
+              // Final black overlay for complete coverage
+              AnimatedBuilder(
+                animation: _grayToBlackController,
+                builder: (context, child) {
+                  // Gradually increase black overlay opacity throughout the transition
+                  double blackOpacity = (1.0 - _grayFadeOut.value) * 0.8; // Max 80% opacity for smooth blend
+                  
+                  return Container(
+                    width: double.infinity,
+                    height: double.infinity,
+                    color: Color(0xFF000000).withOpacity(blackOpacity),
+                  );
+                },
+              ),
               
               // Orb (appears during zoom completion)
               if (_showOrb)
@@ -305,8 +382,8 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: Colors.white.withOpacity(0.1),
-                                width: 1,
+                                color: Colors.transparent,
+                                width: 0,
                               ),
                             ),
                           ),
