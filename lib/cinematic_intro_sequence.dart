@@ -36,25 +36,25 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
   void initState() {
     super.initState();
     
-    // Initialize controllers
+    // Initialize controllers with proper timing for 8-second animation
     _lottieController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 6),
+      duration: const Duration(seconds: 8), // 8 seconds for natural AIA writing speed
     );
     
     _zoomController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2500),
+      duration: const Duration(milliseconds: 2000), // Reduced from 2.5 seconds to 2 seconds
     );
     
     _orbRevealController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1200), // Reduced from 1.5 seconds to 1.2 seconds
     );
     
     _orbScaleController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 1000), // Reduced from 1.2 seconds to 1 second
     );
     
     _orbController = OrbController(
@@ -117,7 +117,12 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
     _lottieController.addStatusListener((status) {
       if (status == AnimationStatus.completed && !_lottieCompleted) {
         _lottieCompleted = true;
-        _startZoomTransition();
+        // Small delay to let the last letter finish smoothly
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (mounted) {
+            _startZoomTransition();
+          }
+        });
       }
     });
     
@@ -132,42 +137,54 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
   }
 
   void _startIntroSequence() async {
-    // Wait a moment, then start fog effect
-    await Future.delayed(const Duration(milliseconds: 500));
-    setState(() {
-      _startFogEffect = true;
-    });
+    // Initial delay before starting the animation sequence
+    await Future.delayed(const Duration(milliseconds: 2500));
     
-    // Wait for fog to build up, then start Lottie
-    await Future.delayed(const Duration(milliseconds: 1000));
-    _lottieController.forward();
+    // Start Lottie animation first without fog for smooth writing
+    if (mounted) {
+      _lottieController.forward();
+    }
   }
 
   void _startZoomTransition() async {
-    // Wait a moment after Lottie completes
-    await Future.delayed(const Duration(milliseconds: 800));
-    
-    setState(() {
-      _startZoom = true;
-    });
-    
-    // Start the dramatic zoom
-    _zoomController.forward();
+    // Start fog effect now that text writing is complete
+    if (mounted) {
+      setState(() {
+        _startFogEffect = true;
+      });
+      
+      // Brief delay to let fog start building
+      await Future.delayed(const Duration(milliseconds: 800));
+      
+      if (mounted) {
+        setState(() {
+          _startZoom = true;
+        });
+        
+        // Start the dramatic zoom
+        _zoomController.forward();
+      }
+    }
   }
 
   void _revealOrb() async {
-    setState(() {
-      _showOrb = true;
-    });
-    
-    // Enable magnet effect on the orb
-    _orbController.setMagnetEnabled(true);
-    
-    // Start orb reveal and scale animations
-    _orbRevealController.forward();
-    
-    await Future.delayed(const Duration(milliseconds: 300));
-    _orbScaleController.forward();
+    if (mounted) {
+      setState(() {
+        _showOrb = true;
+      });
+      
+      // Enable magnet effect on the orb
+      _orbController.setMagnetEnabled(true);
+      
+      // Start orb reveal and scale animations
+      _orbRevealController.forward();
+      
+      // Reduced delay for faster orb scaling
+      await Future.delayed(const Duration(milliseconds: 200));
+      if (mounted) {
+        _orbScaleController.forward();
+      }
+    }
   }
 
   @override
@@ -254,13 +271,13 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
                   child: Container(
                     padding: const EdgeInsets.all(40),
                     child: Lottie.asset(
-                      'assets/aia_animation.json',
+                      'assets/aia_text_animation.json',
                       controller: _lottieController,
-                      width: 500,
-                      height: 300,
+                      width: 700,
+                      height: 400,
                       fit: BoxFit.contain,
                       onLoaded: (composition) {
-                        _lottieController.duration = composition.duration;
+                        // Don't override our custom duration - keep it at 2.5 seconds
                         if (!_lottieController.isAnimating) {
                           _lottieController.forward();
                         }
