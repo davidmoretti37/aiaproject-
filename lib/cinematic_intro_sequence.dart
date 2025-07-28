@@ -137,8 +137,8 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
   }
 
   void _startIntroSequence() async {
-    // Initial delay before starting the animation sequence
-    await Future.delayed(const Duration(milliseconds: 2500));
+    // Brief delay before starting the animation sequence
+    await Future.delayed(const Duration(milliseconds: 1000));
     
     // Start Lottie animation first without fog for smooth writing
     if (mounted) {
