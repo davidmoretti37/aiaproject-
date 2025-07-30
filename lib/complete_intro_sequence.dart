@@ -3,6 +3,7 @@ import 'package:lottie/lottie.dart';
 import 'breath_fog_effect.dart';
 import 'modular_orb.dart';
 import 'magnet_wrapper.dart';
+import 'ai_chat_screen.dart';
 
 class CompleteIntroSequence extends StatefulWidget {
   const CompleteIntroSequence({Key? key}) : super(key: key);
@@ -118,6 +119,16 @@ class _CompleteIntroSequenceState extends State<CompleteIntroSequence>
     // Start orb scale animation with a slight delay
     await Future.delayed(const Duration(milliseconds: 400));
     _orbScaleController.forward();
+    
+    // Wait for orb animation to complete, then transition to AI chat
+    await Future.delayed(const Duration(milliseconds: 1500));
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const AIChatScreen(),
+        ),
+      );
+    }
   }
 
   @override

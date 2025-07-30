@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as Math;
+import 'ai_service.dart';
 
 class AIChatScreen extends StatefulWidget {
   const AIChatScreen({Key? key}) : super(key: key);
@@ -21,10 +22,17 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
 
   Tween<Offset>? _snapPositionTween;
   Tween<double>? _snapScaleTween;
+  
+  // AI Integration
+  bool _isListening = false;
+  bool _isProcessing = false;
+  bool _serverConnected = false;
+  String _lastResponse = '';
 
   @override
   void initState() {
     super.initState();
+    _checkServerConnection();
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 120),
@@ -63,6 +71,37 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
         });
       }
     });
+  }
+
+  Future<void> _checkServerConnection() async {
+    final isConnected = await AIService.checkServerHealth();
+    setState(() {
+      _serverConnected = isConnected;
+    });
+  }
+
+  Future<void> _handleMicrophonePress() async {
+    if (_isProcessing) return;
+    
+    setState(() {
+      _isListening = !_isListening;
+    });
+    
+    if (_isListening) {
+      // Simulate voice input for now - you can integrate speech_to_text here
+      await Future.delayed(const Duration(seconds: 2));
+      setState(() {
+        _isListening = false;
+        _isProcessing = true;
+      });
+      
+      // Send a test message to AI
+      final response = await AIService.sendMessage("Hello, how are you?");
+      setState(() {
+        _lastResponse = response;
+        _isProcessing = false;
+      });
+    }
   }
 
   void _startSnapBack(Offset from, double fromScale, Offset center) {
@@ -226,9 +265,17 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
                           child: Icon(Icons.person, color: Colors.white, size: 18),
                         ),
                         const SizedBox(width: 8),
-                        const Icon(Icons.circle, color: Colors.orange, size: 10),
+                        Icon(
+                          Icons.circle, 
+                          color: _serverConnected ? Colors.green : Colors.red, 
+                          size: 10
+                        ),
                         const SizedBox(width: 8),
-                        Icon(Icons.graphic_eq, color: Colors.orange[200], size: 20),
+                        Icon(
+                          _isListening ? Icons.graphic_eq : Icons.mic,
+                          color: _isListening ? Colors.orange[200] : Colors.white70,
+                          size: 20
+                        ),
                       ],
                     ),
                   ),
@@ -256,12 +303,53 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
             Positioned(
               right: 32,
               bottom: 48,
-              child: CircleAvatar(
-                radius: 32,
-                backgroundColor: Colors.black38,
-                child: Icon(Icons.mic, color: Colors.white, size: 32),
+              child: GestureDetector(
+                onTap: _handleMicrophonePress,
+                child: CircleAvatar(
+                  radius: 32,
+                  backgroundColor: _isListening 
+                    ? Colors.red.withOpacity(0.3)
+                    : _isProcessing 
+                      ? Colors.orange.withOpacity(0.3)
+                      : Colors.black38,
+                  child: _isProcessing
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Icon(
+                        _isListening ? Icons.stop : Icons.mic,
+                        color: Colors.white,
+                        size: 32,
+                      ),
+                ),
               ),
             ),
+            // AI Response Display
+            if (_lastResponse.isNotEmpty)
+              Positioned(
+                left: 32,
+                right: 32,
+                bottom: 120,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.8),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    _lastResponse,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
