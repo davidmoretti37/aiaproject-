@@ -1,0 +1,31 @@
+{
+  "name": "aia-server",
+  "version": "1.0.0",
+  "description": "AIA (Artificial Intelligence Assistant) Server - Simple Express.js server for AI chat functionality",
+  "main": "simple_ai_server.js",
+  "scripts": {
+    "start": "node simple_ai_server.js",
+    "dev": "nodemon simple_ai_server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "ai",
+    "chatbot",
+    "openai",
+    "express",
+    "aia"
+  ],
+  "author": "AIA Project",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "openai": "^4.20.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
