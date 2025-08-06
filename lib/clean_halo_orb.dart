@@ -3,9 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'ai_service.dart';
 import 'shader_orb.dart';
+import 'services/openai_realtime_service.dart';
+import 'services/audio_service.dart';
 import 'dart:async';
+import 'dart:typed_data';
 
 enum OrbState {
   idle,       // Blue, calm breathing
@@ -51,6 +55,12 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   bool _isProcessing = false;
   bool _isSpeaking = false;
   bool _isServerConnected = false;
+  
+  // OpenAI Realtime state
+  bool _isRealtimeConnected = false;
+  bool _isRealtimeConnecting = false;
+  bool _isAISpeaking = false;
+  OpenAIRealtimeService? _openAIService;
   
   String _listeningText = '';
   String _currentResponse = '';
@@ -185,47 +195,84 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
     _fadeInController.forward();
   }
 
-  Future<void> _startListening() async {
-    if (await Permission.microphone.request().isGranted) {
-      if (!_speech.isAvailable) {
-        return;
-      }
-      
-      if (_currentState != OrbState.idle) {
-        return;
-      }
-      
-      setState(() {
-        _currentState = OrbState.listening;
-        _isListening = true;
-        _listeningText = '';
-      });
-      
-      _stateController.forward();
-      
-      await _speech.listen(
-        pauseFor: const Duration(seconds: 3),
-        onResult: (result) {
+  Future<void> _startRealtimeConversation() async {
+    if (_isRealtimeConnecting || _isRealtimeConnected) return;
+    
+    setState(() {
+      _isRealtimeConnecting = true;
+      _currentState = OrbState.processing;
+    });
+
+    try {
+      // Criar serviço com callbacks
+      _openAIService = OpenAIRealtimeService(
+        userName: "Usuário", // Pode ser personalizado
+        onAudioResponse: (audioData) {
+          debugPrint('[AIA Orb] Recebendo áudio: ${audioData.length} bytes');
           setState(() {
-            _listeningText = result.recognizedWords;
-          });
-          
-          if (result.finalResult || (_listeningText.length > 10 && result.confidence > 0.5)) {
-            _stopListening();
-            _processInput(_listeningText);
-          }
-        },
-        listenFor: const Duration(seconds: 10),
-        localeId: 'en_US',
-        onSoundLevelChange: (level) {
-          setState(() {
-            _currentSoundLevel = level;
+            _isAISpeaking = true;
+            _currentState = OrbState.speaking;
           });
         },
-        cancelOnError: true,
-        partialResults: true,
+        onConversationDone: () {
+          debugPrint('[AIA Orb] Resposta recebida');
+          setState(() {
+            _isAISpeaking = false;
+            _currentState = OrbState.listening;
+            _hasInteracted = true;
+          });
+        },
+        onListeningStarted: () {
+          debugPrint('[AIA Orb] Começando a ouvir via Realtime');
+          setState(() {
+            _isRealtimeConnecting = false;
+            _isRealtimeConnected = true;
+            _currentState = OrbState.listening;
+          });
+          _stateController.forward();
+        },
       );
+
+      // Iniciar conexão WebRTC
+      final conectado = await _openAIService!.iniciarConexaoComOpenAI();
+      if (!conectado) {
+        setState(() {
+          _isRealtimeConnecting = false;
+          _currentState = OrbState.idle;
+          _currentResponse = 'Falha ao conectar com a OpenAI. Verifique sua conexão.';
+        });
+        _stateController.reverse();
+        return;
+      }
+    } catch (e) {
+      debugPrint('[AIA Orb] Erro ao iniciar Realtime: $e');
+      setState(() {
+        _isRealtimeConnecting = false;
+        _currentState = OrbState.idle;
+        _currentResponse = 'Erro ao iniciar conversa: $e';
+      });
+      _stateController.reverse();
     }
+  }
+
+  Future<void> _stopRealtimeConversation() async {
+    if (_openAIService != null) {
+      await _openAIService!.encerrarConversa();
+      _openAIService = null;
+    }
+    
+    setState(() {
+      _isRealtimeConnected = false;
+      _isRealtimeConnecting = false;
+      _isAISpeaking = false;
+      _currentState = OrbState.idle;
+    });
+    _stateController.reverse();
+  }
+
+  Future<void> _startListening() async {
+    // Método legado mantido para compatibilidade, mas agora usa Realtime
+    await _startRealtimeConversation();
   }
 
   void _stopListening() {
@@ -252,8 +299,16 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
     });
 
     try {
+      print('🎯 [CleanHaloOrb] Processing input: $input');
+      
+      // Usar o AIService que já tem integração com o sistema avançado
       final response = await AIService().sendMessage(input, sessionId: widget.sessionId);
       final message = response['message'] ?? 'No response received';
+      final executionType = response['execution_type'] ?? 'unknown';
+      final agentUsed = response['agent_used'] ?? 'unknown';
+      
+      print('🚀 [CleanHaloOrb] Response received: $message');
+      print('🧠 [CleanHaloOrb] Execution type: $executionType, Agent: $agentUsed');
       
       setState(() {
         _currentResponse = message;
@@ -261,9 +316,11 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
         _currentState = OrbState.speaking;
       });
       
+      // Falar apenas a mensagem principal (sem informações de debug)
       await _flutterTts.speak(message);
       
     } catch (e) {
+      print('❌ [CleanHaloOrb] Error processing input: $e');
       setState(() {
         _currentResponse = "I'm having trouble connecting right now. Please try again.";
         _isProcessing = false;
@@ -332,6 +389,12 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
     _fadeInController.dispose();
     _stateController.dispose();
     _flutterTts.stop();
+    
+    // Limpar OpenAI Realtime Service
+    if (_openAIService != null) {
+      _openAIService!.encerrarConversa();
+    }
+    
     super.dispose();
   }
 
@@ -450,22 +513,12 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                   child: GestureDetector(
                     onTap: () async {
                       if (_currentState == OrbState.idle) {
-                        _startListening();
-                      } else if (_currentState == OrbState.listening) {
-                        if (_listeningText.isNotEmpty) {
-                          _stopListening();
-                          _processInput(_listeningText);
-                        } else {
-                          _stopListening();
-                          setState(() {
-                            _currentState = OrbState.idle;
-                          });
-                          _stateController.reverse();
-                        }
+                        // Iniciar conversa com OpenAI Realtime
+                        await _startRealtimeConversation();
+                      } else if (_isRealtimeConnected) {
+                        // Se já está conectado, encerrar conversa
+                        await _stopRealtimeConversation();
                       }
-                      
-                      // Test backend connection in background
-                      _testBackendInBackground();
                     },
                     behavior: HitTestBehavior.opaque,
                     child: Container(

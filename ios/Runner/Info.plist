@@ -22,10 +22,25 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>REVERSED_CLIENT_ID</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1059033516426-hbk4lgpue8qocsha8a36suo1jlgk2lt6</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs access to the microphone to enable voice interactions with the AI assistant.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>This app needs access to speech recognition to understand your voice commands and questions.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>
@@ -45,20 +60,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>REVERSED_CLIENT_ID</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.1059033516426-hbk4lgpue8qocsha8a36suo1jlgk2lt6</string>
-			</array>
-		</dict>
-	</array>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>This app needs access to the microphone to enable voice interactions with the AI assistant.</string>
-	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>This app needs access to speech recognition to understand your voice commands and questions.</string>
 </dict>
 </plist>

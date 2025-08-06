@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'clean_app_flow.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Carregar variáveis de ambiente
+  await dotenv.load(fileName: ".env");
+  
   runApp(MyApp());
 }
 

@@ -3,8 +3,12 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'ai_service.dart';
+import 'services/openai_realtime_service.dart';
+import 'services/audio_service.dart';
 import 'dart:async';
+import 'dart:typed_data';
 
 class CleanChatInterface extends StatefulWidget {
   final VoidCallback onReturnToOrb;
@@ -44,6 +48,12 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
   bool _isProcessing = false;
   bool _isSpeaking = false;
   bool _isServerConnected = false;
+  
+  // OpenAI Realtime state
+  bool _isRealtimeConnected = false;
+  bool _isRealtimeConnecting = false;
+  bool _isAISpeaking = false;
+  OpenAIRealtimeService? _openAIService;
   
   String _listeningText = '';
   List<ChatMessage> _messages = [];
@@ -207,11 +217,23 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
     try {
       final response = await AIService().sendMessage(input, sessionId: widget.sessionId);
       final message = response['message'] ?? 'No response received';
+      final executionType = response['execution_type'] ?? 'unknown';
+      final agentUsed = response['agent_used'] ?? 'unknown';
       
-      // Add AI response
-      _addMessage(message, false);
+      // 🎯 Adicionar informação sobre qual sistema foi usado
+      String systemInfo = '';
+      if (executionType == 'advanced_aia') {
+        systemInfo = ' 🧠 [AIA Advanced: $agentUsed]';
+      } else if (executionType == 'simple_backend') {
+        systemInfo = ' 💬 [Simple Backend]';
+      }
       
-      // Speak the response
+      // Add AI response with system info (only in debug mode)
+      final debugMode = true; // Pode ser configurado
+      final finalMessage = debugMode ? '$message$systemInfo' : message;
+      _addMessage(finalMessage, false);
+      
+      // Speak only the main message (without system info)
       await _flutterTts.speak(message);
       
     } catch (e) {
@@ -221,6 +243,70 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
         _isProcessing = false;
       });
     }
+  }
+
+  // OpenAI Realtime Methods
+  Future<void> _startRealtimeConversation() async {
+    if (_isRealtimeConnecting) return;
+    
+    setState(() {
+      _isRealtimeConnecting = true;
+    });
+
+    try {
+      // Criar serviço com callbacks
+      _openAIService = OpenAIRealtimeService(
+        userName: "Usuário", // Pode ser personalizado
+        onAudioResponse: (audioData) {
+          debugPrint('[AIA Chat] Recebendo áudio: ${audioData.length} bytes');
+          setState(() {
+            _isAISpeaking = true;
+          });
+        },
+        onConversationDone: () {
+          debugPrint('[AIA Chat] Resposta recebida');
+          setState(() {
+            _isAISpeaking = false;
+          });
+        },
+        onListeningStarted: () {
+          debugPrint('[AIA Chat] Começando a ouvir via Realtime');
+          setState(() {
+            _isRealtimeConnecting = false;
+            _isRealtimeConnected = true;
+          });
+        },
+      );
+
+      // Iniciar conexão WebRTC
+      final conectado = await _openAIService!.iniciarConexaoComOpenAI();
+      if (!conectado) {
+        _addMessage('Falha ao conectar com a API da OpenAI. Verifique sua conexão.', false);
+        setState(() {
+          _isRealtimeConnecting = false;
+        });
+        return;
+      }
+    } catch (e) {
+      debugPrint('[AIA Chat] Erro ao iniciar Realtime: $e');
+      _addMessage('Erro ao iniciar conversa em tempo real: $e', false);
+      setState(() {
+        _isRealtimeConnecting = false;
+      });
+    }
+  }
+
+  Future<void> _stopRealtimeConversation() async {
+    if (_openAIService != null) {
+      await _openAIService!.encerrarConversa();
+      _openAIService = null;
+    }
+    
+    setState(() {
+      _isRealtimeConnected = false;
+      _isRealtimeConnecting = false;
+      _isAISpeaking = false;
+    });
   }
 
   void _addMessage(String text, bool isUser) {
@@ -251,6 +337,12 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
     _inputController.dispose();
     _scrollController.dispose();
     _flutterTts.stop();
+    
+    // Limpar OpenAI Realtime Service
+    if (_openAIService != null) {
+      _openAIService!.encerrarConversa();
+    }
+    
     super.dispose();
   }
 
@@ -506,6 +598,97 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
               ),
             ),
           
+          // Realtime Status Indicator
+          if (_isRealtimeConnected || _isRealtimeConnecting)
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _isRealtimeConnected ? Colors.blue.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _isRealtimeConnected ? Colors.blue.withOpacity(0.3) : Colors.orange.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _isRealtimeConnected ? Icons.voice_chat : Icons.connecting_airports,
+                    color: _isRealtimeConnected ? Colors.blue : Colors.orange,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _isRealtimeConnected 
+                        ? (_isAISpeaking ? 'AIA está falando...' : 'Conversa em tempo real ativa')
+                        : 'Conectando ao OpenAI Realtime...',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 14,
+                    ),
+                  ),
+                  if (_isRealtimeConnected) ...[
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _stopRealtimeConversation,
+                      child: Icon(
+                        Icons.close,
+                        color: Colors.red,
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+          // Tap to Speak Button (when not in realtime mode)
+          if (!_isRealtimeConnected && !_isRealtimeConnecting)
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: GestureDetector(
+                onTap: _startRealtimeConversation,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.blue.shade600, Colors.blue.shade800],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.blue.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.mic,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Tap to Speak with AIA',
+                        style: GoogleFonts.inter(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
           // Input row
           Row(
             children: [
@@ -538,7 +721,7 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
                       ),
                     ),
                     onSubmitted: (_) => _processTextInput(),
-                    enabled: _isServerConnected && !_isProcessing,
+                    enabled: _isServerConnected && !_isProcessing && !_isRealtimeConnected,
                   ),
                 ),
               ),
@@ -547,39 +730,40 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
               
               // Send button
               IconButton(
-                onPressed: _isServerConnected && !_isProcessing && _inputController.text.trim().isNotEmpty
+                onPressed: _isServerConnected && !_isProcessing && _inputController.text.trim().isNotEmpty && !_isRealtimeConnected
                     ? _processTextInput
                     : null,
                 icon: Icon(
                   Icons.send,
-                  color: _isServerConnected && !_isProcessing && _inputController.text.trim().isNotEmpty
+                  color: _isServerConnected && !_isProcessing && _inputController.text.trim().isNotEmpty && !_isRealtimeConnected
                       ? Colors.blue
                       : Colors.white30,
                   size: 24,
                 ),
               ),
               
-              // Microphone button
-              AnimatedBuilder(
-                animation: _micScale,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _micScale.value,
-                    child: IconButton(
-                      onPressed: _isServerConnected && !_isProcessing
-                          ? (_isListening ? _stopListening : _startListening)
-                          : null,
-                      icon: Icon(
-                        _isListening ? Icons.stop : Icons.mic,
-                        color: _isListening 
-                            ? Colors.red 
-                            : (_isServerConnected && !_isProcessing ? Colors.green : Colors.white30),
-                        size: 24,
+              // Microphone button (traditional speech-to-text)
+              if (!_isRealtimeConnected)
+                AnimatedBuilder(
+                  animation: _micScale,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: _micScale.value,
+                      child: IconButton(
+                        onPressed: _isServerConnected && !_isProcessing
+                            ? (_isListening ? _stopListening : _startListening)
+                            : null,
+                        icon: Icon(
+                          _isListening ? Icons.stop : Icons.mic,
+                          color: _isListening 
+                              ? Colors.red 
+                              : (_isServerConnected && !_isProcessing ? Colors.green : Colors.white30),
+                          size: 24,
+                        ),
                       ),
-                    ),
-                  );
-                },
-              ),
+                    );
+                  },
+                ),
             ],
           ),
         ],

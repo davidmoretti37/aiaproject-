@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'services/google_auth_service.dart';
+import 'services/aia_api_service.dart';
 
 class AIService {
-  // Using your computer's actual IP address for connecting from a physical device
+  // Backend simples local (fallback apenas)
   static const String baseUrl = 'http://192.168.3.54:8000';
 
   
@@ -25,11 +26,45 @@ class AIService {
         userEmail = GoogleAuthService.getUserEmail();
       }
       
-      print('📤 Sending message to: $baseUrl/chat');
-      print('📝 Message: $message');
+      print('📤 Analyzing message: $message');
       print('🔑 Session ID: $effectiveSessionId');
       print('👤 User Email: $userEmail');
-      print('🔐 Has Token: ${accessToken != null}');
+      
+      // 🧠 PRIORIDADE: Sempre tentar backend AIA primeiro
+      print('🎯 Trying AIA backend first for: $message');
+      
+      // Verificar se o backend AIA está disponível
+      final aiaHealthy = await AIAApiService.healthCheck();
+      if (aiaHealthy) {
+        print('✅ AIA Backend is healthy, using advanced AI system');
+        
+        // Usar o sistema avançado do AIAV3
+        final aiaResult = await AIAApiService.executeTask(
+          message, 
+          userId: userEmail ?? 'aiaproject_user',
+          sessionId: effectiveSessionId,
+        );
+        
+        if (aiaResult != null && aiaResult['success'] == true) {
+          print('🚀 AIA executed successfully: ${aiaResult['message']}');
+          return {
+            'message': aiaResult['message'] ?? aiaResult['response'] ?? 'Tarefa executada com sucesso',
+            'metadata': aiaResult['metadata'],
+            'agent_used': aiaResult['agent_used'] ?? 'aia_advanced',
+            'session_id': aiaResult['session_id'] ?? effectiveSessionId,
+            'success': true,
+            'intent_category': AIAApiService.detectIntent(message),
+            'execution_type': 'advanced_aia',
+          };
+        } else {
+          print('⚠️ AIA execution failed, falling back to simple backend');
+        }
+      } else {
+        print('⚠️ AIA Backend not available, falling back to simple backend');
+      }
+      
+      // 🔄 FALLBACK: Usar backend simples original
+      print('📤 Sending to simple backend: $baseUrl/chat');
       
       final requestBody = {
         'message': message,
@@ -60,17 +95,20 @@ class AIService {
         return {
           'message': data['response'] ?? data['message'] ?? 'No response received',
           'metadata': data['metadata'] ?? data['data'],
-          'agent_used': data['agent_used'],
-          'session_id': data['session_id'],
-          'success': data['success'],
-          'intent_category': data['intent_category'],
+          'agent_used': data['agent_used'] ?? 'simple_backend',
+          'session_id': data['session_id'] ?? effectiveSessionId,
+          'success': data['success'] ?? true,
+          'intent_category': data['intent_category'] ?? 'general',
+          'execution_type': 'simple_backend',
         };
       } else {
         return {
           'message': 'Error: ${response.statusCode} - ${response.body}',
           'metadata': null,
-          'agent_used': null,
+          'agent_used': 'error',
           'session_id': effectiveSessionId,
+          'success': false,
+          'execution_type': 'error',
         };
       }
     } catch (e) {
@@ -78,8 +116,10 @@ class AIService {
       return {
         'message': 'Connection error: $e',
         'metadata': null,
-        'agent_used': null,
-        'session_id': sessionId,
+        'agent_used': 'error',
+        'session_id': sessionId ?? 'error',
+        'success': false,
+        'execution_type': 'error',
       };
     }
   }
@@ -196,18 +236,28 @@ class AIService {
   }
 
   static Future<bool> checkServerHealth() async {
+    // 🎯 PRIORIDADE: Verificar backend AIA avançado primeiro
+    print('🔍 Checking AIA advanced backend health...');
+    final aiaHealthy = await AIAApiService.healthCheck();
+    if (aiaHealthy) {
+      print('✅ AIA Backend is healthy and available');
+      return true;
+    }
+    
+    // 🔄 FALLBACK: Verificar backend simples local
     try {
-      print('🔍 Checking server health at: $baseUrl/health');
+      print('🔍 Checking simple backend health at: $baseUrl/health');
       final response = await http.get(
         Uri.parse('$baseUrl/health'),
         headers: {
           'Content-Type': 'application/json',
         },
       );
-      print('✅ Server response: ${response.statusCode} - ${response.body}');
+      print('✅ Simple backend response: ${response.statusCode} - ${response.body}');
       return response.statusCode == 200;
     } catch (e) {
-      print('❌ Server health check failed: $e');
+      print('❌ Simple backend health check failed: $e');
+      print('ℹ️ No backends available - app will work with limited functionality');
       return false;
     }
   }

@@ -60,8 +60,12 @@ dependencies:
   audio_session: ^0.1.16  # Advanced audio session management
   permission_handler: ^10.4.3  # Proper audio permissions
   wakelock_plus: ^1.2.1  # Keep device awake during voice sessions
-  just_audio: ^0.9.34  # High-performance audio playback
+  just_audio: ^0.9.34  # High-performance audio playbook
   noise_meter: ^5.0.2 # For real-time microphone volume
+  
+  # OpenAI Realtime API dependencies
+  flutter_webrtc: ^0.9.48  # WebRTC for real-time communication
+  flutter_dotenv: ^5.1.0   # Environment variables for API keys
 
 dev_dependencies:
   flutter_test:
@@ -90,6 +94,7 @@ flutter:
   # https://flutter.dev/to/resolution-aware-images
   assets:
     - assets/
+    - .env
   
   shaders:
     - shaders/orb.frag
