@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'ai_service.dart';
+import 'core/services/ai_service.dart';
 import 'shader_orb.dart';
 import 'dart:async';
 
@@ -165,7 +165,12 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   }
 
   void _startFadeIn() {
-    _fadeInController.forward();
+    // Add delay to let the transition from login screen complete
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        _fadeInController.forward();
+      }
+    });
   }
 
   Future<void> _startListening() async {
@@ -266,7 +271,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   Color _getOrbColor() {
     switch (_currentState) {
       case OrbState.idle:
-        return Colors.blue;
+        return Colors.green;
       case OrbState.listening:
         return Colors.green;
       case OrbState.processing:
@@ -276,10 +281,23 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
     }
   }
 
+  Color _getSecondaryColor() {
+    switch (_currentState) {
+      case OrbState.idle:
+        return Colors.lightGreen;
+      case OrbState.listening:
+        return Colors.lightGreen;
+      case OrbState.processing:
+        return Colors.deepOrange;
+      case OrbState.speaking:
+        return Colors.deepPurple;
+    }
+  }
+
   double _getOrbHue() {
     switch (_currentState) {
       case OrbState.idle:
-        return 240.0; // Blue
+        return 120.0; // Green
       case OrbState.listening:
         return 120.0; // Green
       case OrbState.processing:
@@ -335,7 +353,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
             opacity: _fadeInOpacity.value,
             child: Stack(
               children: [
-                // Main Orb
+                // Main Orb with Glass Overlay
                 Center(
                   child: GestureDetector(
                     onTap: () {
@@ -367,11 +385,10 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                         return Transform.scale(
                           scale: finalScale,
                           child: ShaderOrb(
-                            size: 340,
+                            size: 300,
                             hue: _getOrbHue(),
                             hoverIntensity: _getOrbIntensity(),
-                            rotateOnHover: false,
-                            forceHoverState: false,
+                            forceHoverState: _currentState != OrbState.idle,
                           ),
                         );
                       },
@@ -451,30 +468,6 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                     ),
                   ),
                 
-                // Connection Status
-                Positioned(
-                  top: 60,
-                  right: 20,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _isServerConnected ? Icons.circle : Icons.circle_outlined,
-                        color: _isServerConnected ? Colors.green : Colors.red,
-                        size: 12,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _isServerConnected ? 'AI Connected' : 'AI Disconnected',
-                        style: GoogleFonts.inter(
-                          color: _isServerConnected ? Colors.green : Colors.red,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
           );

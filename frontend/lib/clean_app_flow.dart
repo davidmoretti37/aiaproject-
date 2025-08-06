@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'ai_service.dart';
+import 'dart:ui';
+import 'core/services/ai_service.dart';
 import 'clean_google_login.dart';
 import 'clean_halo_orb.dart';
 import 'clean_chat_interface.dart';
@@ -263,29 +264,32 @@ class _CleanAppFlowState extends State<CleanAppFlow>
               ),
             ),
             
-            // Forest background with zoom
+            // Forest background with zoom and blur
             Transform.scale(
               scale: _zoomScale.value,
               child: Opacity(
                 opacity: _forestOpacity.value,
-                child: Container(
-                  width: double.infinity,
-                  height: double.infinity,
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage('assets/foggy_forest.jpg'),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
+                child: ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
                   child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withOpacity(0.3),
-                          Colors.black.withOpacity(0.6),
-                        ],
+                    width: double.infinity,
+                    height: double.infinity,
+                    decoration: const BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage('assets/foggy_forest.jpg'),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withOpacity(0.3),
+                            Colors.black.withOpacity(0.6),
+                          ],
+                        ),
                       ),
                     ),
                   ),
