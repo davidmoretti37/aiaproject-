@@ -22,6 +22,7 @@ class CleanGoogleLogin extends StatefulWidget {
 class _CleanGoogleLoginState extends State<CleanGoogleLogin>
     with TickerProviderStateMixin {
   
+  final AIService _aiService = AIService();
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   
@@ -79,11 +80,11 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
     });
 
     try {
-      final success = await AIService().signInWithGoogle();
+      final success = await _aiService.signInWithGoogle();
       
       if (success) {
-        final userEmail = AIService().getUserEmail();
-        final userName = AIService().getUserDisplayName();
+        final userEmail = _aiService.getUserEmail();
+        final userName = _aiService.getUserDisplayName();
         
         setState(() {
           _statusMessage = 'Welcome, ${userName ?? userEmail ?? 'User'}!';

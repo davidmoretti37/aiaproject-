@@ -1,15 +1,18 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'services/google_auth_service.dart';
+import 'core/services/google_auth_service.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 class AIService {
   // Using your computer's actual IP address for connecting from a physical device
   static const String baseUrl = 'http://192.168.3.54:8000';
-
   
+  final GoogleAuthService _googleAuthService = GoogleAuthService();
+  GoogleSignInAccount? _currentUser;
+
   // Initialize Google Auth Service
   Future<void> initializeAuth() async {
-    await GoogleAuthService.initialize();
+    // No explicit initialization needed for this implementation
   }
   
   Future<Map<String, dynamic>> sendMessage(String message, {String? sessionId}) async {
@@ -20,9 +23,9 @@ class AIService {
       // Get Google access token if user is signed in
       String? accessToken;
       String? userEmail;
-      if (GoogleAuthService.isSignedIn()) {
-        accessToken = await GoogleAuthService.getAccessToken();
-        userEmail = GoogleAuthService.getUserEmail();
+      if (isSignedIn()) {
+        accessToken = await getAccessToken();
+        userEmail = getUserEmail();
       }
       
       print('📤 Sending message to: $baseUrl/chat');
@@ -87,8 +90,8 @@ class AIService {
   // Google Authentication Methods
   Future<bool> signInWithGoogle() async {
     try {
-      final account = await GoogleAuthService.signIn();
-      return account != null;
+      _currentUser = await _googleAuthService.signInWithGoogle();
+      return _currentUser != null;
     } catch (e) {
       print('❌ Google sign-in failed: $e');
       return false;
@@ -96,24 +99,26 @@ class AIService {
   }
 
   Future<void> signOut() async {
-    await GoogleAuthService.signOut();
+    await _googleAuthService.signOut();
+    _currentUser = null;
   }
 
   bool isSignedIn() {
-    return GoogleAuthService.isSignedIn();
+    return _currentUser != null;
   }
 
   String? getUserEmail() {
-    return GoogleAuthService.getUserEmail();
+    return _currentUser?.email;
   }
 
   String? getUserDisplayName() {
-    return GoogleAuthService.getUserDisplayName();
+    return _currentUser?.displayName;
   }
 
   Future<String?> getAccessToken() async {
     try {
-      return await GoogleAuthService.getAccessToken();
+      final auth = await _currentUser?.authentication;
+      return auth?.accessToken;
     } catch (e) {
       print('❌ Error getting access token: $e');
       return null;
@@ -157,8 +162,8 @@ class AIService {
       };
       
       // Add Google access token if signed in
-      if (GoogleAuthService.isSignedIn()) {
-        final accessToken = await GoogleAuthService.getAccessToken();
+      if (isSignedIn()) {
+        final accessToken = await getAccessToken();
         if (accessToken != null) {
           requestBody['google_access_token'] = accessToken;
         }
