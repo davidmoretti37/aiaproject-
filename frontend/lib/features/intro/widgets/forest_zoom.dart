@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'breath_fog_effect.dart';
 
@@ -70,21 +71,31 @@ class _ForestZoomState extends State<ForestZoom> with TickerProviderStateMixin {
       builder: (context, child) {
         return Stack(
           children: [
-            Transform.scale(
-              scale: _zoomScale.value,
-              child: Opacity(
-                opacity: _forestOpacity.value,
-                child: Container(
-                  width: double.infinity,
-                  height: double.infinity,
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage('assets/foggy_forest.jpg'),
-                      fit: BoxFit.cover,
+            Stack(
+              children: [
+                Transform.scale(
+                  scale: _zoomScale.value,
+                  child: Opacity(
+                    opacity: _forestOpacity.value,
+                    child: Container(
+                      width: double.infinity,
+                      height: double.infinity,
+                      decoration: const BoxDecoration(
+                        image: DecorationImage(
+                          image: AssetImage('assets/foggy_forest.jpg'),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
                   ),
                 ),
-              ),
+                BackdropFilter(
+                  filter: ui.ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
+                  child: Container(
+                    color: Colors.black.withOpacity(0.1),
+                  ),
+                ),
+              ],
             ),
             Transform.scale(
               scale: _zoomScale.value,

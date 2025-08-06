@@ -158,9 +158,9 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   }
 
   Future<void> _checkServerConnection() async {
-    final isConnected = await AIService.checkServerHealth();
+    // Simulate server connection without actual check
     setState(() {
-      _isServerConnected = isConnected;
+      _isServerConnected = true;
     });
   }
 
@@ -245,27 +245,18 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
       _hasInteracted = true;
     });
 
-    try {
-      final response = await AIService().sendMessage(input, sessionId: widget.sessionId);
-      final message = response['message'] ?? 'No response received';
-      
-      setState(() {
-        _currentResponse = message;
-        _isProcessing = false;
-        _currentState = OrbState.speaking;
-      });
-      
-      await _flutterTts.speak(message);
-      
-    } catch (e) {
-      setState(() {
-        _currentResponse = "I'm having trouble connecting right now. Please try again.";
-        _isProcessing = false;
-        _currentState = OrbState.speaking;
-      });
-      
-      await _flutterTts.speak(_currentResponse);
-    }
+    // Simulate AI response without actual service
+    await Future.delayed(const Duration(milliseconds: 1500));
+    
+    final message = "Hello! I heard you say: $input. This is a demo response.";
+    
+    setState(() {
+      _currentResponse = message;
+      _isProcessing = false;
+      _currentState = OrbState.speaking;
+    });
+    
+    await _flutterTts.speak(message);
   }
 
   Color _getOrbColor() {

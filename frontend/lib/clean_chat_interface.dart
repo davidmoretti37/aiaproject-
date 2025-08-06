@@ -116,9 +116,9 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
   }
 
   Future<void> _checkServerConnection() async {
-    final isConnected = await AIService.checkServerHealth();
+    // Simulate server connection without actual check
     setState(() {
-      _isServerConnected = isConnected;
+      _isServerConnected = true;
     });
   }
 
@@ -204,23 +204,20 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
       _isProcessing = true;
     });
 
-    try {
-      final response = await AIService().sendMessage(input, sessionId: widget.sessionId);
-      final message = response['message'] ?? 'No response received';
-      
-      // Add AI response
-      _addMessage(message, false);
-      
-      // Speak the response
-      await _flutterTts.speak(message);
-      
-    } catch (e) {
-      _addMessage("I'm having trouble connecting right now. Please try again.", false);
-    } finally {
-      setState(() {
-        _isProcessing = false;
-      });
-    }
+    // Simulate AI response without actual service
+    await Future.delayed(const Duration(milliseconds: 1500));
+    
+    final message = "You said: $input. This is a demo response from the chat interface.";
+    
+    // Add AI response
+    _addMessage(message, false);
+    
+    // Speak the response
+    await _flutterTts.speak(message);
+    
+    setState(() {
+      _isProcessing = false;
+    });
   }
 
   void _addMessage(String text, bool isUser) {

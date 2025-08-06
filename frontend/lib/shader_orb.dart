@@ -14,7 +14,7 @@ class ShaderOrb extends StatefulWidget {
   const ShaderOrb({
     Key? key,
     this.size = 340,
-    this.hue = 0,
+    this.hue = 0.333,
     this.hoverIntensity = 0.2,
     this.rotateOnHover = true,
     this.forceHoverState = false,

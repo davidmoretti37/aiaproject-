@@ -126,9 +126,9 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFF000000),
-            Color(0xFF111111),
-            Color(0xFF000000),
+            Color(0xFF1a237e),
+            Color(0xFF283593),
+            Color(0xFF3f51b5),
           ],
         ),
       ),
@@ -154,32 +154,8 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                   
                   const SizedBox(height: 12),
                   
-                  Text(
-                    'Artificial Intelligence Assistant',
-                    style: GoogleFonts.inter(
-                      color: Colors.white70,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w400,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  
                   const SizedBox(height: 80),
                   
-                  // Welcome Message
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40),
-                    child: Text(
-                      'Connect your Google account to access Gmail and Calendar features',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
                   
                   const SizedBox(height: 60),
                   
@@ -192,14 +168,14 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                         child: ElevatedButton(
                           onPressed: _handleGoogleSignIn,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black87,
+                            backgroundColor: const Color(0xFFe91e63),
+                            foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 18),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(30),
                             ),
                             elevation: 8,
-                            shadowColor: Colors.white.withOpacity(0.3),
+                            shadowColor: const Color(0xFFe91e63).withOpacity(0.5),
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -213,7 +189,7 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                                 ),
                                 child: const Icon(
                                   Icons.g_mobiledata,
-                                  color: Colors.blue,
+                                  color: Colors.white,
                                   size: 24,
                                 ),
                               ),

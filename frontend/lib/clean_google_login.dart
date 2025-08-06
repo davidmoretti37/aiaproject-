@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'core/services/ai_service.dart';
 import 'features/auth/widgets/login_halo_orb.dart';
 import 'features/auth/widgets/iridescence_overlay.dart';
 import 'features/auth/widgets/curved_text_loop.dart';
@@ -22,7 +21,6 @@ class CleanGoogleLogin extends StatefulWidget {
 class _CleanGoogleLoginState extends State<CleanGoogleLogin>
     with TickerProviderStateMixin {
   
-  final AIService _aiService = AIService();
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   
@@ -76,55 +74,21 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
   Future<void> _handleGoogleSignIn() async {
     setState(() {
       _isLoading = true;
-      _statusMessage = 'Connecting to Google...';
+      _statusMessage = 'Connecting...';
     });
 
-    try {
-      final success = await _aiService.signInWithGoogle();
-      
-      if (success) {
-        final userEmail = _aiService.getUserEmail();
-        final userName = _aiService.getUserDisplayName();
-        
-        setState(() {
-          _statusMessage = 'Welcome, ${userName ?? userEmail ?? 'User'}!';
-        });
-        
-        // Small delay to show success message
-        await Future.delayed(const Duration(milliseconds: 1500));
-        
-        if (mounted) {
-          widget.onLoginSuccess();
-        }
-      } else {
-        setState(() {
-          _isLoading = false;
-          _statusMessage = 'Login failed. Please try again.';
-        });
-        
-        // Clear error message after 3 seconds
-        Future.delayed(const Duration(seconds: 3), () {
-          if (mounted) {
-            setState(() {
-              _statusMessage = '';
-            });
-          }
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _statusMessage = 'Error: ${e.toString()}';
-      });
-      
-      // Clear error message after 3 seconds
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) {
-          setState(() {
-            _statusMessage = '';
-          });
-        }
-      });
+    // Simulate a login process without actual authentication
+    await Future.delayed(const Duration(milliseconds: 2000));
+    
+    setState(() {
+      _statusMessage = 'Welcome!';
+    });
+    
+    // Small delay to show success message
+    await Future.delayed(const Duration(milliseconds: 1500));
+    
+    if (mounted) {
+      widget.onLoginSuccess();
     }
   }
 
@@ -144,7 +108,7 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
           // Iridescence background
           const Positioned.fill(
             child: IridescenceOverlay(
-              color: Color(0xFF000000),
+              color: Color(0xFF1a237e),
               speed: 0.8,
               amplitude: 0.2,
             ),
@@ -184,28 +148,6 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                             
                             const SizedBox(height: 60),
                             
-                            // Curved Text Loop
-                            AnimatedBuilder(
-                              animation: _haloAnimation,
-                              builder: (context, child) {
-                                return Opacity(
-                                  opacity: _haloAnimation.value,
-                                  child: CurvedTextLoop(
-                                    text: "Artificial Intelligence Assistant",
-                                    speed: 1.5,
-                                    curveAmount: 50.0,
-                                    interactive: true,
-                                    textStyle: GoogleFonts.inter(
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white.withAlpha(204),
-                                      letterSpacing: 2.0,
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                            
                             const SizedBox(height: 60),
                             
                             // Google Sign-In Button
@@ -217,14 +159,14 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                                   child: ElevatedButton(
                                     onPressed: _handleGoogleSignIn,
                                     style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.white,
-                                      foregroundColor: Colors.black87,
+                                      backgroundColor: const Color(0xFFe91e63),
+                                      foregroundColor: Colors.white,
                                       padding: const EdgeInsets.symmetric(vertical: 18),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(30),
                                       ),
                                       elevation: 8,
-                                      shadowColor: Colors.white.withAlpha(76),
+                                      shadowColor: const Color(0xFFe91e63).withOpacity(0.5),
                                     ),
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.center,
@@ -238,7 +180,7 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                                           ),
                                           child: const Icon(
                                             Icons.g_mobiledata,
-                                            color: Colors.blue,
+                                            color: Colors.white,
                                             size: 24,
                                           ),
                                         ),
