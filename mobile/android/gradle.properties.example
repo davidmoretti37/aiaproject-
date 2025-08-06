@@ -1,0 +1,13 @@
+# Configurações de signing para release
+# Copie este arquivo para gradle.properties e preencha com suas credenciais reais
+
+# Credenciais do keystore para assinatura de release
+CALMA_KEY_ALIAS=calma_alias
+CALMA_KEY_PASSWORD=sua_senha_da_chave_aqui
+CALMA_STORE_FILE=calma_key.jks
+CALMA_STORE_PASSWORD=sua_senha_do_keystore_aqui
+
+# Configurações do Gradle
+org.gradle.jvmargs=-Xmx1536M
+android.useAndroidX=true
+android.enableJetifier=true

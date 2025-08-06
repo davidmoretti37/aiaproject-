@@ -1,145 +1,128 @@
 #!/bin/bash
 
-# AIA System Startup Script
-# This script starts the complete AIA system including the AI server and Flutter app
+# AIA Project - Quick Start Script
+# This script starts both the AI backend and Flutter app
 
-echo "🚀 Starting AIA (Artificial Intelligence Assistant) System..."
-echo "=================================================="
+echo "🚀 Starting AIA Project System..."
+echo "=================================="
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+# Check if Python is installed
+if ! command -v python3 &> /dev/null; then
+    echo "❌ Python 3 is required but not installed."
+    echo "Please install Python 3 and try again."
+    exit 1
+fi
 
-# Function to check if a command exists
-command_exists() {
-    command -v "$1" >/dev/null 2>&1
+# Check if Flutter is installed
+if ! command -v flutter &> /dev/null; then
+    echo "❌ Flutter is required but not installed."
+    echo "Please install Flutter and try again."
+    exit 1
+fi
+
+# Function to check if port is in use
+check_port() {
+    if lsof -Pi :$1 -sTCP:LISTEN -t >/dev/null ; then
+        return 0
+    else
+        return 1
+    fi
 }
 
-# Function to check if a port is in use
-port_in_use() {
-    lsof -i :$1 >/dev/null 2>&1
-}
-
-# Check prerequisites
-echo -e "${BLUE}📋 Checking prerequisites...${NC}"
-
-if ! command_exists node; then
-    echo -e "${RED}❌ Node.js is not installed. Please install Node.js 16+ first.${NC}"
-    exit 1
+# Check if backend is already running
+if check_port 8000; then
+    echo "⚠️  Backend server is already running on port 8000"
+    echo "You can skip backend setup and just run Flutter."
+    read -p "Do you want to start Flutter anyway? (y/n): " -n 1 -r
+    echo
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
+        echo "📱 Starting Flutter app..."
+        flutter run
+        exit 0
+    else
+        echo "Exiting..."
+        exit 0
+    fi
 fi
 
-if ! command_exists npm; then
-    echo -e "${RED}❌ npm is not installed. Please install npm first.${NC}"
-    exit 1
-fi
-
-if ! command_exists flutter; then
-    echo -e "${RED}❌ Flutter is not installed. Please install Flutter SDK first.${NC}"
-    exit 1
-fi
-
-echo -e "${GREEN}✅ All prerequisites are installed${NC}"
-
-# Check Node.js version
-NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
-if [ "$NODE_VERSION" -lt 16 ]; then
-    echo -e "${YELLOW}⚠️  Warning: Node.js version is $NODE_VERSION. Recommended version is 16+${NC}"
-fi
-
-# Check if OpenAI API key is set
-if [ -z "$OPENAI_API_KEY" ]; then
-    echo -e "${YELLOW}⚠️  Warning: OPENAI_API_KEY environment variable is not set${NC}"
-    echo -e "${YELLOW}   You can set it with: export OPENAI_API_KEY='your-key-here'${NC}"
-    echo -e "${YELLOW}   Or create a .env file with: OPENAI_API_KEY=your-key-here${NC}"
-fi
-
-# Check if port 8000 is available
-if port_in_use 8000; then
-    echo -e "${YELLOW}⚠️  Warning: Port 8000 is already in use${NC}"
-    echo -e "${YELLOW}   Please stop the process using port 8000 or change the port in simple_ai_server.js${NC}"
-fi
-
-# Install Node.js dependencies if needed
-if [ ! -d "node_modules" ]; then
-    echo -e "${BLUE}📦 Installing Node.js dependencies...${NC}"
-    npm install
-    if [ $? -ne 0 ]; then
-        echo -e "${RED}❌ Failed to install Node.js dependencies${NC}"
+# Check if .env file exists
+if [ ! -f "backend_ai/.env" ]; then
+    echo "⚠️  Backend .env file not found!"
+    echo "Creating .env file from template..."
+    
+    if [ -f "backend_ai/.env.example" ]; then
+        cp backend_ai/.env.example backend_ai/.env
+        echo "✅ Created .env file from template"
+        echo ""
+        echo "🔑 IMPORTANT: You need to add your OpenAI API key!"
+        echo "Edit backend_ai/.env and add your OpenAI API key:"
+        echo "OPENAI_API_KEY=your_openai_api_key_here"
+        echo ""
+        read -p "Press Enter after you've added your API key..."
+    else
+        echo "❌ .env.example file not found. Please create backend_ai/.env manually."
         exit 1
     fi
-    echo -e "${GREEN}✅ Node.js dependencies installed${NC}"
-else
-    echo -e "${GREEN}✅ Node.js dependencies already installed${NC}"
 fi
 
-# Install Flutter dependencies
-echo -e "${BLUE}📱 Installing Flutter dependencies...${NC}"
-flutter pub get
-if [ $? -ne 0 ]; then
-    echo -e "${RED}❌ Failed to install Flutter dependencies${NC}"
-    exit 1
-fi
-echo -e "${GREEN}✅ Flutter dependencies installed${NC}"
+# Start backend server in background
+echo "🔧 Starting AI Backend Server..."
+cd backend_ai
 
-# Start the AI server in background
-echo -e "${BLUE}🤖 Starting AI Server...${NC}"
-npm start &
-SERVER_PID=$!
+# Check if virtual environment exists
+if [ ! -d "venv" ]; then
+    echo "📦 Creating Python virtual environment..."
+    python3 -m venv venv
+fi
+
+# Activate virtual environment
+source venv/bin/activate
+
+# Install dependencies
+echo "📦 Installing Python dependencies..."
+pip install -r requirements.txt
+
+# Start the backend server
+echo "🚀 Starting backend server on http://localhost:8000..."
+python main.py --mode api &
+BACKEND_PID=$!
 
 # Wait a moment for server to start
 sleep 3
 
-# Check if server started successfully
-if ! port_in_use 8000; then
-    echo -e "${RED}❌ Failed to start AI server on port 8000${NC}"
-    kill $SERVER_PID 2>/dev/null
+# Check if backend started successfully
+if check_port 8000; then
+    echo "✅ Backend server started successfully!"
+    echo "📖 API Documentation: http://localhost:8000/docs"
+else
+    echo "❌ Failed to start backend server"
+    kill $BACKEND_PID 2>/dev/null
     exit 1
 fi
 
-echo -e "${GREEN}✅ AI Server started successfully on port 8000${NC}"
-echo -e "${GREEN}   Server PID: $SERVER_PID${NC}"
-
-# Test server health
-echo -e "${BLUE}🔍 Testing server health...${NC}"
-HEALTH_CHECK=$(curl -s http://localhost:8000/health 2>/dev/null)
-if [ $? -eq 0 ]; then
-    echo -e "${GREEN}✅ Server health check passed${NC}"
-    echo -e "${GREEN}   Response: $HEALTH_CHECK${NC}"
-else
-    echo -e "${YELLOW}⚠️  Server health check failed, but server might still be starting...${NC}"
-fi
-
-# Function to cleanup on exit
-cleanup() {
-    echo -e "\n${YELLOW}🛑 Shutting down AIA system...${NC}"
-    if [ ! -z "$SERVER_PID" ]; then
-        echo -e "${BLUE}   Stopping AI server (PID: $SERVER_PID)...${NC}"
-        kill $SERVER_PID 2>/dev/null
-        wait $SERVER_PID 2>/dev/null
-    fi
-    echo -e "${GREEN}✅ AIA system shutdown complete${NC}"
-    exit 0
-}
-
-# Set up signal handlers
-trap cleanup SIGINT SIGTERM
+# Go back to root directory
+cd ..
 
 # Start Flutter app
-echo -e "${BLUE}📱 Starting Flutter app...${NC}"
-echo -e "${YELLOW}   Note: This will open the Flutter app. Use Ctrl+C to stop both server and app.${NC}"
-echo -e "${YELLOW}   Server logs will be shown in the background.${NC}"
 echo ""
-echo -e "${GREEN}🎉 AIA System is now running!${NC}"
-echo -e "${GREEN}   - AI Server: http://localhost:8000${NC}"
-echo -e "${GREEN}   - Health Check: http://localhost:8000/health${NC}"
-echo -e "${GREEN}   - Flutter App: Starting...${NC}"
+echo "📱 Starting Flutter app..."
+echo "The app will show a beautiful cinematic intro, then transition to AI chat."
 echo ""
 
-# Start Flutter app (this will block until app is closed)
+# Install Flutter dependencies
+flutter pub get
+
+# Run Flutter app
 flutter run
 
-# If we reach here, Flutter app was closed
-cleanup
+# Cleanup function
+cleanup() {
+    echo ""
+    echo "🛑 Shutting down AIA system..."
+    kill $BACKEND_PID 2>/dev/null
+    echo "✅ Backend server stopped"
+    echo "👋 Goodbye!"
+}
+
+# Set trap to cleanup on script exit
+trap cleanup EXIT INT TERM

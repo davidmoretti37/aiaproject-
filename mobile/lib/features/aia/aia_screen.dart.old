@@ -1,0 +1,1003 @@
+import 'package:flutter/material.dart';
+import 'dart:math';
+import 'dart:io';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:calma_flutter/features/aia/services/audio_service.dart';
+import 'package:calma_flutter/features/aia/services/openai_realtime_service.dart';
+import 'package:calma_flutter/core/di/injection.dart';
+import 'package:calma_flutter/features/auth/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:calma_flutter/features/profile/data/repositories/user_profile_repository_impl.dart';
+import 'package:calma_flutter/core/services/supabase_service.dart';
+
+class AiaScreen extends StatefulWidget {
+  const AiaScreen({super.key});
+
+  @override
+  State<AiaScreen> createState() => _AiaScreenState();
+}
+
+class _AiaScreenState extends State<AiaScreen> with TickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<Offset> _slideAnimation;
+  
+  // Imagem para usar na animação
+  final String _imageAsset = 'assets/images/ba4aa252-6ce8-4eed-a0e1-9b5265138a7a.png';
+  bool _isConnecting = true;
+  bool _isListening = false;
+  bool _isMuted = false; // Variável para controlar se o áudio está mudo
+  bool _isAIASpeaking = false; // Variável para controlar quando a AIA está falando
+  String _statusMessage = "Iniciando...";
+  OpenAIRealtimeService? _openAIService;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Controlador para a animação de movimento vertical
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 4000),
+    );
+
+    // Animação de deslizamento suave para cima e para baixo
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.03),  // Começa um pouco abaixo
+      end: const Offset(0, -0.03),   // Termina um pouco acima
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
+    // Iniciar a animação com repetição contínua
+    _animationController.repeat(reverse: true);
+
+    _iniciarConexao();
+  }
+
+  @override
+  void dispose() {
+    _encerrarConversa();
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _iniciarConexao() async {
+    setState(() {
+      _statusMessage = "Respire... Você chegou.";
+    });
+
+    // Obter nome preferido do perfil do usuário
+    final authViewModel = getIt<AuthViewModel>();
+    final currentUser = authViewModel.currentUser;
+    String? userName;
+    
+    debugPrint('[AIA Screen] 🔍 Iniciando busca do nome do usuário...');
+    debugPrint('[AIA Screen] currentUser: ${currentUser?.id}');
+    debugPrint('[AIA Screen] currentUser.name: ${currentUser?.name}');
+    
+    if (currentUser != null) {
+      try {
+        setState(() {
+          _statusMessage = "Respire... Você chegou.";
+        });
+        
+        debugPrint('[AIA Screen] 🔄 Buscando perfil no banco de dados...');
+        final profileRepository = UserProfileRepositoryImpl(SupabaseService.client);
+        final profile = await profileRepository.getProfileByUserId(currentUser.id);
+        
+        debugPrint('[AIA Screen] 📋 Perfil encontrado: ${profile != null}');
+        if (profile != null) {
+          debugPrint('[AIA Screen] 📋 preferredName: "${profile.preferredName}"');
+          debugPrint('[AIA Screen] 📋 preferredName está vazio? ${profile.preferredName.isEmpty}');
+          debugPrint('[AIA Screen] 📋 fullName: "${profile.fullName}"');
+          debugPrint('[AIA Screen] 📋 email: "${profile.email}"');
+        }
+        
+        if (profile != null && profile.preferredName.isNotEmpty) {
+          userName = profile.preferredName;
+          debugPrint('[AIA Screen] ✅ Usando nome preferido do perfil: "$userName"');
+        } else if (profile != null && profile.fullName != null && profile.fullName!.isNotEmpty) {
+          userName = profile.fullName;
+          debugPrint('[AIA Screen] ✅ Usando nome completo do perfil: "$userName"');
+        } else {
+          userName = currentUser.name;
+          debugPrint('[AIA Screen] ⚠️ Usando nome do usuário autenticado: "$userName"');
+        }
+      } catch (e) {
+        debugPrint('[AIA Screen] ❌ Erro ao buscar perfil: $e');
+        userName = currentUser.name;
+        debugPrint('[AIA Screen] ⚠️ Fallback para nome do usuário autenticado: "$userName"');
+      }
+    } else {
+      debugPrint('[AIA Screen] ❌ Usuário não autenticado!');
+    }
+    
+    debugPrint('[AIA Screen] 🎯 Nome final para IA: "${userName ?? "não disponível"}"');
+    debugPrint('[AIA Screen] 🎯 Nome é null? ${userName == null}');
+    debugPrint('[AIA Screen] 🎯 Nome está vazio? ${userName?.isEmpty ?? true}');
+
+    // Criar serviço com callbacks e nome do usuário
+    _openAIService = OpenAIRealtimeService(
+      userName: userName,
+      onAudioResponse: (audioData) {
+        debugPrint('[AIA Screen] Recebendo áudio: ${audioData.length} bytes');
+        setState(() {
+          _isAIASpeaking = true;
+          _statusMessage = ""; // Remover o texto durante a fala da AIA
+        });
+        
+        // Pausar a animação enquanto a IA está falando
+        if (_animationController.isAnimating) {
+          _animationController.stop();
+        }
+      },
+      onConversationDone: () {
+        debugPrint('[AIA Screen] Resposta recebida');
+        // Reiniciar a conexão automaticamente para manter a conversa contínua
+        if (_openAIService != null && !_openAIService!.isConnected) {
+          _iniciarConexao();
+        } else {
+          setState(() {
+            _isAIASpeaking = false;
+            _statusMessage = "Estou ouvindo...";
+          });
+          
+          // Reiniciar a animação para indicar que está ouvindo novamente
+          if (!_animationController.isAnimating) {
+            _animationController.repeat(reverse: true);
+          }
+        }
+      },
+      onListeningStarted: () {
+        debugPrint('[AIA Screen] Começando a ouvir');
+        setState(() {
+          _statusMessage = "Estou ouvindo...";
+        });
+        
+        // Iniciar a animação quando começar a ouvir
+        if (!_animationController.isAnimating) {
+          _animationController.repeat(reverse: true);
+        }
+      },
+    );
+
+    // Iniciar conexão WebRTC
+    try {
+      final conectado = await _openAIService!.iniciarConexaoComOpenAI();
+      if (!conectado) {
+        // Verificar se o erro foi por permissão de microfone
+        final status = await AudioService.verificarStatusPermissao();
+        if (!status.isGranted) {
+          debugPrint('[AIA Screen] Falha na conexão devido a permissão de microfone');
+          await _mostrarErroPermissao(status);
+          return;
+        }
+        
+        _mostrarErro('Falha ao conectar com a API da OpenAI. Verifique sua conexão com a internet e tente novamente.');
+        return;
+      }
+
+      setState(() {
+        _isConnecting = false;
+        _isListening = true;
+        _statusMessage = "Estou ouvindo...";
+      });
+    } catch (e) {
+      debugPrint('[AIA Screen] Erro ao iniciar conexão: $e');
+      
+      // Verificar se o erro pode ser relacionado a permissão
+      if (e.toString().contains('Permission') || e.toString().contains('NotAllowed') || e.toString().contains('microfone')) {
+        final status = await AudioService.verificarStatusPermissao();
+        await _mostrarErroPermissao(status);
+      } else {
+        _mostrarErro('Erro ao iniciar conexão: $e');
+      }
+    }
+  }
+
+  Future<void> _encerrarConversa() async {
+    if (mounted) {
+      setState(() {
+        _isListening = false;
+        _statusMessage = "Encerrando conversa...";
+      });
+    }
+
+    // Parar a animação
+    if (_animationController.isAnimating) {
+      _animationController.stop();
+    }
+
+    // Encerrar a conversa de forma assíncrona
+    try {
+      if (_openAIService != null) {
+        await _openAIService!.encerrarConversa();
+        _openAIService = null;
+      }
+      
+      if (mounted) {
+        setState(() {
+          _statusMessage = "Conversa encerrada";
+        });
+      }
+    } catch (e) {
+      debugPrint('[AIA Screen] Erro ao encerrar conversa: $e');
+      if (mounted) {
+        setState(() {
+          _statusMessage = "Erro ao encerrar conversa";
+        });
+      }
+    }
+  }
+
+  void _mostrarErro(String mensagem) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(mensagem),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'Tentar Novamente',
+          textColor: Colors.white,
+          onPressed: _iniciarConexao,
+        ),
+      ),
+    );
+    if (mounted) {
+      setState(() {
+        _isListening = false;
+        _isConnecting = false;
+        _statusMessage = "Erro de conexão";
+      });
+    }
+  }
+
+  /// Mostra erro específico de permissão com opções adequadas
+  Future<void> _mostrarErroPermissao(PermissionStatus status) async {
+    String titulo = 'Permissão de Microfone';
+    String mensagem = '';
+    String botaoAcao = 'Tentar Novamente';
+    VoidCallback? acaoBotao = _iniciarConexao;
+
+    switch (status) {
+      case PermissionStatus.denied:
+        titulo = 'Permissão Negada';
+        mensagem = Platform.isIOS 
+          ? 'O acesso ao microfone foi negado. Para conversar com a AIA, você precisa permitir o acesso ao microfone.'
+          : 'O acesso ao microfone foi negado. Para conversar com a AIA, você precisa permitir o acesso ao microfone.';
+        break;
+      
+      case PermissionStatus.permanentlyDenied:
+        titulo = 'Permissão Bloqueada';
+        mensagem = Platform.isIOS
+          ? 'O acesso ao microfone foi permanentemente negado. Vá em Configurações > C\'Alma > Microfone e permita o acesso.'
+          : 'O acesso ao microfone foi permanentemente negado. Vá em Configurações do app para permitir o acesso.';
+        botaoAcao = 'Abrir Configurações';
+        acaoBotao = () async {
+          final abriu = await AudioService.abrirConfiguracoes();
+          if (!abriu) {
+            _mostrarErro('Não foi possível abrir as configurações. Abra manualmente: Configurações > Apps > C\'Alma > Permissões');
+          }
+        };
+        break;
+      
+      case PermissionStatus.restricted:
+        titulo = 'Acesso Restrito';
+        mensagem = 'O acesso ao microfone está restrito pelo sistema. Verifique as configurações de controle parental ou restrições do dispositivo.';
+        botaoAcao = 'Entendi';
+        acaoBotao = null;
+        break;
+      
+      default:
+        titulo = 'Erro de Permissão';
+        mensagem = 'Houve um problema ao acessar o microfone. Verifique as permissões do app.';
+        break;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isListening = false;
+        _isConnecting = false;
+        _statusMessage = "Erro de permissão";
+      });
+
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: Text(
+            titulo,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1F2937),
+            ),
+          ),
+          content: Text(
+            mensagem,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF6B7280),
+            ),
+          ),
+          backgroundColor: Colors.black,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          actions: [
+            if (acaoBotao == null) // Apenas botão "Entendi" para casos sem ação
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: Text(
+                  botaoAcao,
+                  style: const TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              )
+            else ...[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text(
+                  'Cancelar',
+                  style: TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  acaoBotao?.call();
+                },
+                child: Text(
+                  botaoAcao,
+                  style: const TextStyle(
+                    color: Color(0xFF9333EA),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+  }
+
+  Future<void> _alternarEscuta() async {
+    // Evitar múltiplos cliques enquanto está processando
+    if (_isConnecting) return;
+    
+    if (_isListening) {
+      // Se estiver ouvindo, encerrar a conversa
+      await _encerrarConversa();
+    } else {
+      // Se não estiver ouvindo, iniciar uma nova conexão
+      setState(() {
+        _isConnecting = true;
+        _statusMessage = "Iniciando conexão...";
+      });
+      
+      // Pequeno atraso para garantir que a UI seja atualizada antes de iniciar a conexão
+      await Future.delayed(const Duration(milliseconds: 100));
+      await _iniciarConexao();
+    }
+  }
+  
+  // Método para alternar entre mudo e não mudo
+  void _alternarMudo() {
+    setState(() {
+      _isMuted = !_isMuted;
+      
+      if (_isMuted) {
+        // Implementar lógica para mutar o áudio
+        AudioService.muteAudio();
+        _statusMessage = "Áudio Mutado";
+      } else {
+        // Implementar lógica para desmutar o áudio
+        AudioService.unmuteAudio();
+        _statusMessage = "Estou Ouvindo...";
+      }
+    });
+  }
+
+  /// Mostra dialog para denunciar conteúdo da IA
+  Future<void> _mostrarDialogDenuncia() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const _DialogDenuncia(),
+    );
+  }
+
+  /// Mostra um alert de confirmação para encerrar a conversa
+  Future<bool> _mostrarConfirmacaoSaida() async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text(
+          'Encerrar conversa?',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF1F2937),
+          ),
+        ),
+        content: const Text(
+          'Você realmente deseja sair e encerrar a conversa com a AIA? Se você escolher sair, você poderá ver essa conversa na tela de insights.',
+          style: TextStyle(
+            fontSize: 14,
+            color: Color(0xFF6B7280),
+          ),
+        ),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              debugPrint('[AIA Screen] Usuário cancelou a saída');
+              Navigator.of(context).pop(false);
+            },
+            child: const Text(
+              'Não',
+              style: TextStyle(
+                color: Color(0xFF6B7280),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              debugPrint('[AIA Screen] Usuário confirmou a saída');
+              Navigator.of(context).pop(true);
+            },
+            child: const Text(
+              'Sim',
+              style: TextStyle(
+                color: Color(0xFFDC2626),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    ) ?? false; // Retorna false se o dialog for fechado sem escolha
+  }
+
+  Widget _buildStatusIndicator() {
+    if (_isConnecting) {
+      return const CircularProgressIndicator(color: Color(0xFF9D82FF));
+    } else if (_isListening) {
+      return _buildPulsingCircle();
+    } else {
+      return const Icon(Icons.mic_off, color: Colors.grey, size: 40);
+    }
+  }
+
+  Widget _buildPulsingCircle() {
+    // Criar um círculo feito de partículas brilhantes (estilo cosmos/constelação)
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        // Efeito de pulsar suave
+        final scale = 0.95 + (_animationController.value * 0.05);
+        
+        return Transform.scale(
+          scale: scale,
+          child: Container(
+            width: 300, 
+            height: 300,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+            ),
+            child: CustomPaint(
+              painter: ParticlesCirclePainter(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// Painter personalizado para criar o efeito de partículas brilhantes em formato circular
+class ParticlesCirclePainter extends CustomPainter {
+    @override
+    void paint(Canvas canvas, Size size) {
+      final radius = size.width / 2;
+      final center = Offset(size.width / 2, size.height / 2);
+      
+      // Gerar partículas dentro do círculo
+      final random = Random();
+      
+      // Desenhar algumas linhas finas para conectar algumas partículas
+      final linePaint = Paint()
+        ..color = Colors.cyan.withOpacity(0.05)
+        ..strokeWidth = 0.3
+        ..style = PaintingStyle.stroke;
+      
+      // Criar 600 partículas
+      List<Offset> particles = [];
+      for (int i = 0; i < 600; i++) {
+        // Criar distribuição de partículas em formato circular
+        double r = radius * sqrt(random.nextDouble());
+        double theta = random.nextDouble() * 2 * pi;
+        double x = center.dx + r * cos(theta);
+        double y = center.dy + r * sin(theta);
+        particles.add(Offset(x, y));
+      }
+      
+      // Desenhar 100 conexões entre partículas próximas
+      for (int i = 0; i < 100; i++) {
+        final p1 = particles[random.nextInt(particles.length)];
+        final p2 = particles[random.nextInt(particles.length)];
+        if ((p1 - p2).distance < radius / 3) {
+          canvas.drawLine(p1, p2, linePaint);
+        }
+      }
+      
+      // Desenhar as partículas
+      for (final particle in particles) {
+        // Escolher aleatoriamente entre branco, azul claro e ciano
+        final colors = [
+          Colors.white.withOpacity(0.7),
+          Colors.white.withOpacity(0.5),
+          Colors.cyanAccent.withOpacity(0.6),
+          Colors.lightBlueAccent.withOpacity(0.5),
+        ];
+        
+        final particleSize = random.nextDouble() * 1.2 + 0.8;
+        final particleColor = colors[random.nextInt(colors.length)];
+        
+        final particlePaint = Paint()..color = particleColor;
+        canvas.drawCircle(particle, particleSize, particlePaint);
+      }
+    }
+    
+    @override
+    bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: false, // Intercepta o botão de voltar do sistema
+      onPopInvoked: (didPop) async {
+        if (!didPop) {
+          debugPrint('[AIA Screen] Botão de voltar do sistema interceptado');
+          final confirmar = await _mostrarConfirmacaoSaida();
+          if (confirmar) {
+            debugPrint('[AIA Screen] Usuário confirmou saída pelo sistema - encerrando conversa');
+            await _encerrarConversa();
+            if (mounted) {
+              Navigator.of(context).pop();
+            }
+          } else {
+            debugPrint('[AIA Screen] Usuário cancelou saída pelo sistema');
+          }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+          automaticallyImplyLeading: false, // Remove o botão de voltar padrão
+          centerTitle: true,
+          // Botão de refresh removido
+        ),
+        body: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                         _buildStatusIndicator(),
+                        const SizedBox(height: 20),
+                        
+                        // Mensagem de status estilizada
+                        if (_statusMessage.isNotEmpty)
+                          Text(
+                            _statusMessage,
+                            style: const TextStyle(
+                              color: Colors.white70,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w300,
+                            ),
+                          ),
+                        
+                        // Espaçador para empurrar os botões para a parte inferior
+                        const Spacer(),
+                        
+                        // Botões de controle (mudo e encerrar)
+                        if (_isListening && !_isConnecting)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 30),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                // Botão de encerrar conversa
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade900,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 5),
+                                      ),
+                                    ],
+                                  ),
+                                  child: IconButton(
+                                    icon: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 26,
+                                    ),
+                                    onPressed: () async {
+                                      final confirmar = await _mostrarConfirmacaoSaida();
+                                      if (confirmar) {
+                                        debugPrint('[AIA Screen] Usuário confirmou encerramento via botão - encerrando conversa');
+                                        await _encerrarConversa();
+                                        if (mounted) {
+                                          Navigator.of(context).pop();
+                                        }
+                                      } else {
+                                        debugPrint('[AIA Screen] Usuário cancelou encerramento via botão');
+                                      }
+                                    },
+                                  ),
+                                ),
+                                
+                                // Botão de microfone
+                                Container(
+                                  width: 60,
+                                  height: 60,
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey.shade900,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 5),
+                                      ),
+                                    ],
+                                  ),
+                                  child: IconButton(
+                                    icon: Icon(
+                                      _isMuted ? Icons.mic_off : Icons.mic,
+                                      color: _isMuted ? Colors.red : Colors.white,
+                                      size: 26,
+                                    ),
+                                    onPressed: _alternarMudo,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: 20),
+                        if (_isListening && !_isConnecting)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF5F0FF),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text(
+                              'Fale algo para conversar com a AIA...',
+                              style: TextStyle(fontSize: 14, color: Color(0xFF6B6B6B)),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        
+                        // Botão destacado "Reportar problema" - movido para baixo do card
+                        if (_isListening && !_isConnecting)
+                          Container(
+                            margin: const EdgeInsets.only(top: 16),
+                            child: ElevatedButton.icon(
+                              onPressed: _mostrarDialogDenuncia,
+                              icon: const Icon(
+                                Icons.flag,
+                                color: Color(0xFF9333EA),
+                                size: 18,
+                              ),
+                              label: const Text(
+                                'Reportar Problema',
+                                style: TextStyle(
+                                  color: Color(0xFF9333EA),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFF5F0FF),
+                                foregroundColor: const Color(0xFF9333EA),
+                                side: const BorderSide(color: Color(0xFF9333EA)),
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Widget separado para o dialog de denúncia com estado próprio
+class _DialogDenuncia extends StatefulWidget {
+  const _DialogDenuncia();
+
+  @override
+  State<_DialogDenuncia> createState() => _DialogDenunciaState();
+}
+
+class _DialogDenunciaState extends State<_DialogDenuncia> {
+  String? categoriaSelecionada;
+  String descricao = '';
+  bool enviando = false;
+
+  final categorias = {
+    'Conteúdo Ofensivo': 'Conteúdo Ofensivo',
+    'Informações Incorretas': 'Informações Incorretas',
+    'Conteúdo Inadequado': 'Conteúdo Inadequado',
+    'Conteúdo Perigoso': 'Conteúdo Perigoso',
+    'Comportamento Estranho': 'Comportamento Estranho',
+    'Outros': 'Outros'
+  };
+
+  bool get podeEnviar => categoriaSelecionada != null && descricao.trim().isNotEmpty && !enviando;
+
+  Future<void> _enviarDenuncia() async {
+    if (!podeEnviar) return;
+
+    setState(() {
+      enviando = true;
+    });
+
+    try {
+      debugPrint('[Dialog Denúncia] 🚀 Iniciando envio...');
+      debugPrint('[Dialog Denúncia] Categoria: $categoriaSelecionada');
+      debugPrint('[Dialog Denúncia] Descrição: $descricao');
+      
+      final authViewModel = getIt<AuthViewModel>();
+      final currentUser = authViewModel.currentUser;
+      
+      if (currentUser == null) {
+        throw Exception('Usuário não autenticado');
+      }
+
+      final dadosEnvio = {
+        'user_id': currentUser.id,
+        'category': categoriaSelecionada!,
+        'description': descricao.trim(),
+        'timestamp_of_incident': DateTime.now().toIso8601String(),
+        'status': 'pending'
+      };
+      
+      debugPrint('[Dialog Denúncia] 📋 Dados: $dadosEnvio');
+
+      final response = await SupabaseService.client
+          .from('ai_content_reports')
+          .insert(dadosEnvio)
+          .select();
+
+      debugPrint('[Dialog Denúncia] ✅ Sucesso: $response');
+      
+      if (mounted) {
+        Navigator.of(context).pop();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Denúncia enviada com sucesso! Nossa equipe irá analisá-la em breve.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+
+    } catch (e, stackTrace) {
+      debugPrint('[Dialog Denúncia] ❌ ERRO: $e');
+      debugPrint('[Dialog Denúncia] 📍 Stack: $stackTrace');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Erro ao enviar denúncia: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+            action: SnackBarAction(
+              label: 'Tentar Novamente',
+              textColor: Colors.white,
+              onPressed: _enviarDenuncia,
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          enviando = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Row(
+        children: [
+          Icon(Icons.flag, color: Color(0xFF9333EA), size: 24),
+          SizedBox(width: 8),
+          Text(
+            'Reportar Problema',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1F2937),
+            ),
+          ),
+        ],
+      ),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Relate problemas com o conteúdo gerado pela IA para nos ajudar a melhorar o serviço.',
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF6B7280),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Categoria da Denúncia *',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF1F2937),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: categoriaSelecionada,
+                  hint: const Text('Selecione uma categoria'),
+                  isExpanded: true,
+                  items: categorias.entries.map((entry) {
+                    return DropdownMenuItem<String>(
+                      value: entry.key,
+                      child: Text(entry.value),
+                    );
+                  }).toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      categoriaSelecionada = value;
+                    });
+                  },
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Descreva o Problema *',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF1F2937),
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              maxLines: 4,
+              maxLength: 1000,
+              decoration: InputDecoration(
+                hintText: 'Descreva detalhadamente o que aconteceu...',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: BorderSide(color: Colors.grey.shade300),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: Color(0xFF9333EA)),
+                ),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  descricao = value;
+                });
+              },
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info, color: Colors.blue, size: 16),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Privacidade: Não coletamos o conteúdo das suas conversas. Apenas sua descrição do problema será enviada para análise.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text(
+            'Cancelar',
+            style: TextStyle(
+              color: Color(0xFF6B7280),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: podeEnviar ? _enviarDenuncia : null,
+          child: Text(
+            enviando ? 'Enviando...' : 'Enviar Denúncia',
+            style: TextStyle(
+              color: podeEnviar ? const Color(0xFF9333EA) : Colors.grey,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}

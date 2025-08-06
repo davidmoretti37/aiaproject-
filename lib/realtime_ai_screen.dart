@@ -147,15 +147,16 @@ class _RealtimeAIScreenState extends State<RealtimeAIScreen>
     });
 
     try {
-      final response = await AIService.sendMessage(input, sessionId: _sessionId);
-      
+      final response = await AIService().sendMessage(input, sessionId: _sessionId);
+      final message = response['message'] as String? ?? "I'm not sure how to respond to that.";
+
       setState(() {
-        _currentResponse = response;
+        _currentResponse = message;
         _isProcessing = false;
       });
       
       // Speak the response
-      await _flutterTts.speak(response);
+      await _flutterTts.speak(message);
       
     } catch (e) {
       setState(() {

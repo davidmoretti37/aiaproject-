@@ -3,7 +3,7 @@ import 'package:lottie/lottie.dart';
 import 'breath_fog_effect.dart';
 import 'modular_orb.dart';
 import 'magnet_wrapper.dart';
-import 'ai_chat_screen.dart';
+import 'transforming_orb_chat_screen.dart';
 
 class CompleteIntroSequence extends StatefulWidget {
   const CompleteIntroSequence({Key? key}) : super(key: key);
@@ -119,16 +119,6 @@ class _CompleteIntroSequenceState extends State<CompleteIntroSequence>
     // Start orb scale animation with a slight delay
     await Future.delayed(const Duration(milliseconds: 400));
     _orbScaleController.forward();
-    
-    // Wait for orb animation to complete, then transition to AI chat
-    await Future.delayed(const Duration(milliseconds: 1500));
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => const AIChatScreen(),
-        ),
-      );
-    }
   }
 
   @override
@@ -168,20 +158,37 @@ class _CompleteIntroSequenceState extends State<CompleteIntroSequence>
                         opacity: _orbOpacity.value,
                         child: Transform.scale(
                           scale: _orbScale.value,
-                          child: MagnetWrapper(
-                            magnetStrength: 3.0,
-                            padding: 150,
-                            child: ModularAnimatedOrb(
-                              controller: _orbController,
-                              size: 340,
-                              overlay: Container(
-                                width: 340,
-                                height: 340,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white.withOpacity(0.1),
-                                    width: 1,
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).pushReplacement(
+                                PageRouteBuilder(
+                                  pageBuilder: (context, animation, secondaryAnimation) =>
+                                      const TransformingOrbChatScreen(),
+                                  transitionDuration: const Duration(milliseconds: 800),
+                                  transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                                    return FadeTransition(
+                                      opacity: animation,
+                                      child: child,
+                                    );
+                                  },
+                                ),
+                              );
+                            },
+                            child: MagnetWrapper(
+                              magnetStrength: 3.0,
+                              padding: 150,
+                              child: ModularAnimatedOrb(
+                                controller: _orbController,
+                                size: 340,
+                                overlay: Container(
+                                  width: 340,
+                                  height: 340,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white.withOpacity(0.1),
+                                      width: 1,
+                                    ),
                                   ),
                                 ),
                               ),

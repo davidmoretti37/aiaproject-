@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C'Alma - Email Confirmado</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+        }
+
+        h1 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .subtitle {
+            color: #718096;
+            margin-bottom: 30px;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        .success-icon {
+            width: 60px;
+            height: 60px;
+            background: #48bb78;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        .download-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .download-title {
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        .download-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            gap: 10px;
+        }
+
+        .download-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .download-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .download-btn.secondary {
+            background: #f7fafc;
+            color: #4a5568;
+            border: 2px solid #e2e8f0;
+        }
+
+        .download-btn.secondary:hover {
+            background: #edf2f7;
+            border-color: #cbd5e0;
+        }
+
+        .app-info {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f7fafc;
+            border-radius: 12px;
+            font-size: 14px;
+            color: #718096;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            h1 {
+                font-size: 20px;
+            }
+            
+            .subtitle {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">C</div>
+        
+        <div class="success-icon">✓</div>
+        
+        <h1>Email Confirmado!</h1>
+        <p class="subtitle">
+            Seu email foi verificado com sucesso. Agora você pode acessar todos os recursos do C'Alma.
+        </p>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: #718096;">Tentando abrir o app...</p>
+        </div>
+
+        <div class="download-section">
+            <h3 class="download-title">Baixe o App C'Alma</h3>
+            
+            <div class="download-buttons">
+                <a href="#" class="download-btn primary" id="openApp">
+                    📱 Abrir no App
+                </a>
+                
+                <a href="#" class="download-btn secondary" id="downloadApp">
+                    ⬇️ Baixar App
+                </a>
+            </div>
+
+            <div class="app-info">
+                <strong>C'Alma</strong> - Seu companheiro para bem-estar mental e emocional.
+                <br><br>
+                ✨ Meditações guiadas<br>
+                🧠 IA personalizada<br>
+                📊 Acompanhamento de humor<br>
+                🎯 Lembretes inteligentes
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tentar abrir o app automaticamente
+        function tryOpenApp() {
+            console.log('🔗 Tentando abrir o app...');
+            
+            // Mostrar loading
+            document.getElementById('loading').style.display = 'block';
+            
+            // Tentar abrir o app
+            window.location.href = 'calma://email-confirmed';
+            
+            // Esconder loading após 3 segundos
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+            }, 3000);
+        }
+
+        // Detectar plataforma
+        function detectPlatform() {
+            const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+            
+            if (/android/i.test(userAgent)) {
+                return 'android';
+            }
+            
+            if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+                return 'ios';
+            }
+            
+            return 'web';
+        }
+
+        // Configurar botões de download
+        function setupDownloadButtons() {
+            const platform = detectPlatform();
+            const openAppBtn = document.getElementById('openApp');
+            const downloadAppBtn = document.getElementById('downloadApp');
+            
+            // Botão "Abrir no App"
+            openAppBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                tryOpenApp();
+            });
+            
+            // Botão "Baixar App"
+            downloadAppBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                if (platform === 'android') {
+                    // Redirecionar para Play Store (quando disponível)
+                    window.open('https://play.google.com/store/search?q=calma+wellness', '_blank');
+                } else if (platform === 'ios') {
+                    // Redirecionar para App Store (quando disponível)
+                    window.open('https://apps.apple.com/search?term=calma+wellness', '_blank');
+                } else {
+                    // Para web, mostrar informações
+                    alert('O app C\'Alma estará disponível em breve na Play Store e App Store!');
+                }
+            });
+        }
+
+        // Inicializar quando a página carregar
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('📱 Página de confirmação carregada');
+            setupDownloadButtons();
+            
+            // Tentar abrir o app automaticamente após 1 segundo
+            setTimeout(tryOpenApp, 1000);
+        });
+
+        // Detectar se o usuário voltou para a página (app não abriu)
+        let hidden = false;
+        
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                hidden = true;
+            } else if (hidden) {
+                // Usuário voltou para a página, app provavelmente não está instalado
+                console.log('👤 Usuário voltou - app pode não estar instalado');
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

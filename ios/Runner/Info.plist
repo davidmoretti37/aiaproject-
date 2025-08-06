@@ -45,9 +45,20 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>REVERSED_CLIENT_ID</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1059033516426-hbk4lgpue8qocsha8a36suo1jlgk2lt6</string>
+			</array>
+		</dict>
+	</array>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>AIA needs access to your microphone to listen to your voice commands and provide intelligent responses.</string>
+	<string>This app needs access to the microphone to enable voice interactions with the AI assistant.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
-	<string>AIA uses speech recognition to understand your voice commands and convert them to text for AI processing.</string>
+	<string>This app needs access to speech recognition to understand your voice commands and questions.</string>
 </dict>
 </plist>

@@ -1,0 +1,33 @@
+flutter_native_splash:
+  # Cor de fundo da tela de splash
+  color: "#000000"
+  
+  # Imagem de splash que será mostrada no centro da tela
+  # Vamos criar essa imagem em seguida
+  image: assets/images/splash_icon.png
+  
+  # Modo escuro - usando as mesmas configurações
+  dark_color: "#000000"
+  dark_image: assets/images/splash_icon.png
+  
+  # Tipo de ajuste da imagem para que fique adequado a todos os tamanhos de tela
+  android_12:
+    color: "#000000"
+    dark_color: "#000000"
+    icon_background_color: "#000000"
+    dark_icon_background_color: "#000000"
+    image: assets/images/splash_icon.png
+    dark_image: assets/images/splash_icon.png
+  
+  # Configurações para iOS
+  ios: true
+  
+  # Centralizar a imagem
+  android: true
+  ios_content_mode: center
+  
+  # Configurações para a web
+  web: false
+  
+  # Ícone para Android 12
+  android_gravity: center

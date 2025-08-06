@@ -30,14 +30,17 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  speech_to_text: ^6.3.0
-#  flutter_tts: ^3.8.5
+  speech_to_text: ^6.6.2
+  flutter_tts: ^3.8.5
   http: ^1.2.1
+  url_launcher: ^6.3.1
+  shared_preferences: ^2.2.2
+  google_sign_in: ^6.1.5
 
   tdesign_flutter: ^0.2.2
   getwidget: ^4.0.0
   flutter_neumorphic: ^3.2.0
-  google_fonts: ^6.1.0
+  google_fonts: ^6.3.0
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -51,6 +54,14 @@ dependencies:
   flutter_animate: ^4.5.0
   simple_animations: ^5.0.2
   lottie: ^3.0.0  # For Lottie animations
+  
+  # Professional-grade audio processing packages
+  flutter_sound: ^9.2.13 # Professional audio recording and playback
+  audio_session: ^0.1.16  # Advanced audio session management
+  permission_handler: ^10.4.3  # Proper audio permissions
+  wakelock_plus: ^1.2.1  # Keep device awake during voice sessions
+  just_audio: ^0.9.34  # High-performance audio playback
+  noise_meter: ^5.0.2 # For real-time microphone volume
 
 dev_dependencies:
   flutter_test:
@@ -79,6 +90,9 @@ flutter:
   # https://flutter.dev/to/resolution-aware-images
   assets:
     - assets/
+  
+  shaders:
+    - shaders/orb.frag
   # For details regarding adding assets from package dependencies, see
   # https://flutter.dev/to/asset-from-package
 

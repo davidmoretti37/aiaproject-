@@ -1,0 +1,14 @@
+# Exemplo de configuração do keystore
+# Copie este arquivo para key.properties e ajuste conforme necessário
+
+# Caminho para o arquivo keystore (relativo ao diretório android/app/)
+storeFile=../path/to/your/keystore.jks
+
+# Senha do keystore
+storePassword=your_store_password
+
+# Alias da chave
+keyAlias=your_key_alias
+
+# Senha da chave
+keyPassword=your_key_password

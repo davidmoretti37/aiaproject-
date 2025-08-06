@@ -10,6 +10,7 @@ class OrbController extends ChangeNotifier {
   double _animationValue = 0.0;
   Offset? _pointer;
   bool _magnetEnabled = false;
+  Color _baseColor = Colors.white;
 
   OrbController({
     this.dotCount = 400,
@@ -50,6 +51,13 @@ class OrbController extends ChangeNotifier {
     _magnetEnabled = enabled;
     notifyListeners();
   }
+
+  void setBaseColor(Color color) {
+    _baseColor = color;
+    notifyListeners();
+  }
+
+  Color get baseColor => _baseColor;
 }
 
 class ModularAnimatedOrb extends StatefulWidget {
@@ -111,6 +119,7 @@ class _ModularAnimatedOrbState extends State<ModularAnimatedOrb> with SingleTick
                   pointer: widget.controller.pointer,
                   magnetEnabled: widget.controller.magnetEnabled,
                   radius: widget.controller.radius,
+                  baseColor: widget.controller.baseColor,
                 ),
               ),
             ),
@@ -128,6 +137,7 @@ class ModularOrbPainter extends CustomPainter {
   final Offset? pointer;
   final bool magnetEnabled;
   final double radius;
+  final Color baseColor;
 
   ModularOrbPainter({
     required this.dots,
@@ -135,6 +145,7 @@ class ModularOrbPainter extends CustomPainter {
     required this.pointer,
     required this.magnetEnabled,
     required this.radius,
+    required this.baseColor,
   });
 
   @override
@@ -171,8 +182,6 @@ class ModularOrbPainter extends CustomPainter {
       double pulse = 0.8 + 0.2 * sin(elapsedSeconds * 3.5 + phaseOffset);
       double dotRadius = lerpDouble(2.0, 4.5, pulse)! * perspective;
       double opacity = lerpDouble(0.5, 1.0, pulse)! * (0.7 + 0.3 * (zRot + 1) / 2);
-
-      Color baseColor = Colors.white;
 
       paint.color = baseColor.withOpacity(opacity.clamp(0.0, 1.0));
       canvas.drawCircle(dotPos, dotRadius, paint);
