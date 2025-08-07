@@ -47,7 +47,7 @@ class _LoginHaloOrbState extends State<LoginHaloOrb>
           scale: _breathingScale.value,
           child: const ShaderOrb(
             size: 120,
-            hue: 120.0, // Green hue
+            hue: 120.0, // Green hue in degrees
             hoverIntensity: 0.3,
             forceHoverState: false,
           ),

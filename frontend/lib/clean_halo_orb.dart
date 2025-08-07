@@ -266,9 +266,9 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
       case OrbState.listening:
         return Colors.green;
       case OrbState.processing:
-        return Colors.orange;
+        return Colors.green;
       case OrbState.speaking:
-        return Colors.purple;
+        return Colors.green;
     }
   }
 
@@ -279,22 +279,23 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
       case OrbState.listening:
         return Colors.lightGreen;
       case OrbState.processing:
-        return Colors.deepOrange;
+        return Colors.lightGreen;
       case OrbState.speaking:
-        return Colors.deepPurple;
+        return Colors.lightGreen;
     }
   }
 
   double _getOrbHue() {
+    // The shader expects hue values in degrees (0-360)
     switch (_currentState) {
       case OrbState.idle:
         return 120.0; // Green
       case OrbState.listening:
-        return 120.0; // Green
+        return 240.0; // Blue
       case OrbState.processing:
         return 30.0;  // Orange
       case OrbState.speaking:
-        return 280.0; // Purple
+        return 300.0; // Purple
     }
   }
 
