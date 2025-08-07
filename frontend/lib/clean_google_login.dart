@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'features/auth/widgets/login_halo_orb.dart';
 import 'features/auth/widgets/iridescence_overlay.dart';
 import 'features/auth/widgets/curved_text_loop.dart';
+import 'core/services/google_auth_service.dart';
 
 class CleanGoogleLogin extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -27,6 +28,7 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
   late AnimationController _haloController;
   late Animation<double> _haloAnimation;
   
+  final GoogleAuthService _googleAuthService = GoogleAuthService();
   bool _isLoading = false;
   String _statusMessage = '';
 
@@ -74,21 +76,34 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
   Future<void> _handleGoogleSignIn() async {
     setState(() {
       _isLoading = true;
-      _statusMessage = 'Connecting...';
+      _statusMessage = 'Connecting to Google...';
     });
 
-    // Simulate a login process without actual authentication
-    await Future.delayed(const Duration(milliseconds: 2000));
-    
-    setState(() {
-      _statusMessage = 'Welcome!';
-    });
-    
-    // Small delay to show success message
-    await Future.delayed(const Duration(milliseconds: 1500));
-    
-    if (mounted) {
-      widget.onLoginSuccess();
+    try {
+      final account = await _googleAuthService.signInWithGoogle();
+      
+      if (account != null) {
+        setState(() {
+          _statusMessage = 'Welcome, ${account.displayName ?? account.email}!';
+        });
+        
+        // Small delay to show success message
+        await Future.delayed(const Duration(milliseconds: 1500));
+        
+        if (mounted) {
+          widget.onLoginSuccess();
+        }
+      } else {
+        setState(() {
+          _isLoading = false;
+          _statusMessage = 'Sign-in was cancelled or failed. Please try again.';
+        });
+      }
+    } catch (error) {
+      setState(() {
+        _isLoading = false;
+        _statusMessage = 'Error: ${error.toString()}';
+      });
     }
   }
 
@@ -102,13 +117,13 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFF0d4f3c), // Dark green background
       body: Stack(
         children: [
           // Iridescence background
           const Positioned.fill(
             child: IridescenceOverlay(
-              color: Color(0xFF1a237e),
+              color: Color(0xFF1b5e20), // Green iridescence
               speed: 0.8,
               amplitude: 0.2,
             ),

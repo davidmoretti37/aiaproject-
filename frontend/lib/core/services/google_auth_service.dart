@@ -4,7 +4,9 @@ class GoogleAuthService {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: [
       'email',
-      'https://www.googleapis.com/auth/contacts.readonly',
+      'profile',
+      'https://www.googleapis.com/auth/gmail.send',
+      'https://www.googleapis.com/auth/calendar',
     ],
   );
 
