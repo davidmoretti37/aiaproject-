@@ -446,6 +446,7 @@ Você é a **AIA**, uma assistente de IA conversacional que atua como coordenado
 - Consulta RENAVAM por placa, verificação de débitos
 - Preços FIPE, informações de veículos brasileiros
 - Suporte placas antigas (ABC1234) e Mercosul (ABC1D23)
+- **EXEMPLO MOCKADO**: Para demonstração, use a placa DQQ1778
 
 ### ⏰ **Reminder Agent** - Gerenciamento de Lembretes
 - Criar lembretes para datas importantes
@@ -764,6 +765,46 @@ Lembre-se: você é a coordenadora inteligente de 6 agentes especializados que g
     } catch (e) {
       debugPrint('[OpenAI Realtime] Erro durante a reconexão: $e');
       return false;
+    }
+  }
+
+  /// Muta o áudio do OpenAI Realtime
+  void muteAudio() {
+    try {
+      if (_localStream != null) {
+        for (var track in _localStream!.getAudioTracks()) {
+          track.enabled = false;
+        }
+        debugPrint('[OpenAI Realtime] 🔇 Áudio mutado');
+      }
+      
+      if (_remoteStream != null) {
+        for (var track in _remoteStream!.getAudioTracks()) {
+          track.enabled = false;
+        }
+      }
+    } catch (e) {
+      debugPrint('[OpenAI Realtime] Erro ao mutar áudio: $e');
+    }
+  }
+
+  /// Desmuta o áudio do OpenAI Realtime
+  void unmuteAudio() {
+    try {
+      if (_localStream != null) {
+        for (var track in _localStream!.getAudioTracks()) {
+          track.enabled = true;
+        }
+        debugPrint('[OpenAI Realtime] 🔊 Áudio desmutado');
+      }
+      
+      if (_remoteStream != null) {
+        for (var track in _remoteStream!.getAudioTracks()) {
+          track.enabled = true;
+        }
+      }
+    } catch (e) {
+      debugPrint('[OpenAI Realtime] Erro ao desmutar áudio: $e');
     }
   }
 

@@ -312,6 +312,9 @@ class AudioService {
         'volume': 1.0, // Máximo
         'sampleRate': 48000,
         'channelCount': 1,
+        // FORÇAR USO DO ALTO-FALANTE PRINCIPAL
+        'googDefaultToSpeaker': true,
+        'speakerphone': true,
       },
       'video': false,
     };

@@ -48,6 +48,7 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
   bool _isProcessing = false;
   bool _isSpeaking = false;
   bool _isServerConnected = false;
+  bool _isMuted = false;
   
   // OpenAI Realtime state
   bool _isRealtimeConnected = false;
@@ -233,8 +234,10 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
       final finalMessage = debugMode ? '$message$systemInfo' : message;
       _addMessage(finalMessage, false);
       
-      // Speak only the main message (without system info)
-      await _flutterTts.speak(message);
+      // Speak only the main message (without system info) if not muted
+      if (!_isMuted) {
+        await _flutterTts.speak(message);
+      }
       
     } catch (e) {
       _addMessage("I'm having trouble connecting right now. Please try again.", false);
@@ -307,6 +310,31 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
       _isRealtimeConnecting = false;
       _isAISpeaking = false;
     });
+  }
+
+  void _toggleMute() {
+    setState(() {
+      _isMuted = !_isMuted;
+    });
+    
+    if (_isMuted) {
+      // Stop any current TTS
+      _flutterTts.stop();
+      
+      // Mute OpenAI Realtime if connected
+      if (_openAIService != null) {
+        _openAIService!.muteAudio();
+      }
+      
+      _addMessage("🔇 Audio muted", false);
+    } else {
+      // Unmute OpenAI Realtime if connected
+      if (_openAIService != null) {
+        _openAIService!.unmuteAudio();
+      }
+      
+      _addMessage("🔊 Audio unmuted", false);
+    }
   }
 
   void _addMessage(String text, bool isUser) {
@@ -405,6 +433,18 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
               ),
             ),
           ),
+          
+          // Mute Button
+          IconButton(
+            onPressed: _toggleMute,
+            icon: Icon(
+              _isMuted ? Icons.volume_off : Icons.volume_up,
+              color: _isMuted ? Colors.red : Colors.white,
+              size: 24,
+            ),
+          ),
+          
+          const SizedBox(width: 12),
           
           // Connection Status
           Row(
