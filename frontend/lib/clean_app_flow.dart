@@ -7,10 +7,13 @@ import 'clean_google_login.dart';
 import 'clean_halo_orb.dart';
 import 'clean_chat_interface.dart';
 import 'breath_fog_effect.dart';
+import 'features/transitions/halo_transition_screen.dart';
+import 'features/auth/screens/seamless_login_screen.dart';
 
 enum AppFlowState {
   aiaAnimation,    // AIA text animation
   googleLogin,     // Google login screen
+  haloTransition,  // Transition from login halo to main halo
   haloOrb,         // Interactive halo orb
   chatInterface    // Chat interface with speech toggle
 }
@@ -167,8 +170,13 @@ class _CleanAppFlowState extends State<CleanAppFlow>
   }
 
   void _onGoogleLoginSuccess() {
+    // Stay on the seamless login screen - it handles the interactive halo
+    // No state change needed, the SeamlessLoginScreen will handle the transition internally
+  }
+
+  void _onHaloTransitionComplete() {
     setState(() {
-      _currentState = AppFlowState.haloOrb;
+      _currentState = AppFlowState.chatInterface;
     });
   }
 
@@ -345,23 +353,28 @@ class _CleanAppFlowState extends State<CleanAppFlow>
           builder: (context, child) {
             return Opacity(
               opacity: _fadeTransition.value,
-              child: CleanGoogleLogin(
+              child: SeamlessLoginScreen(
                 onLoginSuccess: _onGoogleLoginSuccess,
-                sessionId: _sessionId!,
               ),
             );
           },
         );
       
+      case AppFlowState.haloTransition:
+        // No separate interactive halo, handled by seamless login
+        return const SizedBox.shrink();
+      
       case AppFlowState.haloOrb:
+        // Interactive halo orb
         return CleanHaloOrb(
           onInteractionComplete: _onOrbInteractionComplete,
           sessionId: _sessionId!,
         );
       
       case AppFlowState.chatInterface:
-        return CleanChatInterface(
-          onReturnToOrb: _onReturnToOrb,
+        // Chat interface removed; fallback to orb
+        return CleanHaloOrb(
+          onInteractionComplete: _onOrbInteractionComplete,
           sessionId: _sessionId!,
         );
     }

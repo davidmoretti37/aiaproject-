@@ -26,6 +26,8 @@ class _IridescenceOverlayState extends State<IridescenceOverlay>
   late final AnimationController _controller;
   FragmentShader? _shader;
   Offset _mousePosition = const Offset(0.5, 0.5);
+  late final Stopwatch _stopwatch;
+  late Timer _timer;
 
   @override
   void initState() {
@@ -34,6 +36,10 @@ class _IridescenceOverlayState extends State<IridescenceOverlay>
       vsync: this,
       duration: const Duration(seconds: 1),
     )..repeat();
+    _stopwatch = Stopwatch()..start();
+    _timer = Timer.periodic(const Duration(milliseconds: 16), (_) {
+      if (mounted) setState(() {});
+    });
     _loadShader();
   }
 
@@ -51,6 +57,8 @@ class _IridescenceOverlayState extends State<IridescenceOverlay>
   @override
   void dispose() {
     _controller.dispose();
+    _stopwatch.stop();
+    _timer.cancel();
     super.dispose();
   }
 
@@ -76,11 +84,12 @@ class _IridescenceOverlayState extends State<IridescenceOverlay>
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
+          final elapsed = _stopwatch.elapsedMilliseconds / 1000.0; // seconds, never resets
           return CustomPaint(
             size: Size.infinite,
             painter: _IridescencePainter(
               shader: _shader!,
-              time: _controller.value * 100, // Pass a continuously increasing time value
+              time: elapsed,
               color: widget.color,
               mousePosition: _mousePosition,
               amplitude: widget.amplitude,

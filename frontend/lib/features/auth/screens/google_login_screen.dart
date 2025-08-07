@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:frontend/core/services/google_auth_service.dart';
 import '../widgets/login_halo_orb.dart';
+import '../widgets/aia_background.dart';
 
 class GoogleLoginScreen extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -75,14 +76,18 @@ class _GoogleLoginScreenState extends State<GoogleLoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      body: AnimatedBuilder(
-        animation: _fadeAnimation,
-        builder: (context, child) {
-          return Opacity(
-            opacity: _fadeAnimation.value,
-            child: Column(
-              children: [
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        children: [
+          // Shared iridescent background
+          const AiaBackground(),
+          AnimatedBuilder(
+            animation: _fadeAnimation,
+            builder: (context, child) {
+              return Opacity(
+                opacity: _fadeAnimation.value,
+                child: Column(
+                  children: [
                 // Top section with halo
                 Expanded(
                   flex: 3,

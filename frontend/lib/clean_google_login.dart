@@ -4,6 +4,7 @@ import 'features/auth/widgets/login_halo_orb.dart';
 import 'features/auth/widgets/iridescence_overlay.dart';
 import 'features/auth/widgets/curved_text_loop.dart';
 import 'core/services/google_auth_service.dart';
+import 'features/auth/widgets/gradient_button.dart';
 
 class CleanGoogleLogin extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -76,34 +77,21 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
   Future<void> _handleGoogleSignIn() async {
     setState(() {
       _isLoading = true;
-      _statusMessage = 'Connecting to Google...';
+      _statusMessage = 'Mock login...';
     });
 
-    try {
-      final account = await _googleAuthService.signInWithGoogle();
-      
-      if (account != null) {
-        setState(() {
-          _statusMessage = 'Welcome, ${account.displayName ?? account.email}!';
-        });
-        
-        // Small delay to show success message
-        await Future.delayed(const Duration(milliseconds: 1500));
-        
-        if (mounted) {
-          widget.onLoginSuccess();
-        }
-      } else {
-        setState(() {
-          _isLoading = false;
-          _statusMessage = 'Sign-in was cancelled or failed. Please try again.';
-        });
-      }
-    } catch (error) {
-      setState(() {
-        _isLoading = false;
-        _statusMessage = 'Error: ${error.toString()}';
-      });
+    // Simulate a login process without actual authentication
+    await Future.delayed(const Duration(milliseconds: 1200));
+    
+    setState(() {
+      _statusMessage = 'Welcome!';
+    });
+    
+    // Small delay to show success message
+    await Future.delayed(const Duration(milliseconds: 1000));
+    
+    if (mounted) {
+      widget.onLoginSuccess();
     }
   }
 
@@ -122,10 +110,20 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
         children: [
           // Iridescence background
           const Positioned.fill(
-            child: IridescenceOverlay(
-              color: Color(0xFF1b5e20), // Green iridescence
-              speed: 0.8,
-              amplitude: 0.2,
+            child: Stack(
+              children: [
+                IridescenceOverlay(
+                  color: Color(0xFF0d2e1a), // Darker green iridescence
+                  speed: 0.008,
+                  amplitude: 0.2,
+                ),
+                // Gray overlay for subtlety
+                IgnorePointer(
+                  child: ColoredBox(
+                    color: Color(0xFF444444), // fully opaque medium gray
+                  ),
+                ),
+              ],
             ),
           ),
           
@@ -169,45 +167,18 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                             if (!_isLoading)
                               Padding(
                                 padding: const EdgeInsets.symmetric(horizontal: 40),
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed: _handleGoogleSignIn,
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFe91e63),
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 18),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(30),
-                                      ),
-                                      elevation: 8,
-                                      shadowColor: const Color(0xFFe91e63).withOpacity(0.5),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Container(
-                                          width: 28,
-                                          height: 28,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(14),
-                                            color: Colors.white,
-                                          ),
-                                          child: const Icon(
-                                            Icons.g_mobiledata,
-                                            color: Colors.white,
-                                            size: 24,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Text(
-                                          'Connect with Google',
-                                          style: GoogleFonts.inter(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ],
+                                child: GradientButton(
+                                  width: 320,
+                                  height: 64,
+                                  onPressed: _handleGoogleSignIn,
+                                  disabled: _isLoading,
+                                  child: Text(
+                                    'Connect with Google',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                      letterSpacing: 0.5,
                                     ),
                                   ),
                                 ),

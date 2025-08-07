@@ -5,6 +5,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'core/services/ai_service.dart';
 import 'shader_orb.dart';
+import 'features/auth/widgets/iridescence_overlay.dart';
 import 'dart:async';
 
 enum OrbState {
@@ -336,15 +337,13 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: AnimatedBuilder(
-        animation: _fadeInOpacity,
-        builder: (context, child) {
-          return Opacity(
-            opacity: _fadeInOpacity.value,
-            child: Stack(
-              children: [
+    return AnimatedBuilder(
+      animation: _fadeInOpacity,
+      builder: (context, child) {
+        return Opacity(
+          opacity: _fadeInOpacity.value,
+          child: Stack(
+            children: [
                 // Main Orb with Glass Overlay
                 Center(
                   child: GestureDetector(
@@ -460,11 +459,10 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                     ),
                   ),
                 
-              ],
-            ),
-          );
-        },
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
