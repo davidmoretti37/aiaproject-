@@ -20,9 +20,9 @@ PODS:
   - flutter_sound_core (9.28.0)
   - flutter_tts (0.0.1):
     - Flutter
-  - flutter_webrtc (0.9.36):
+  - flutter_webrtc (0.11.3):
     - Flutter
-    - WebRTC-SDK (= 114.5735.08)
+    - WebRTC-SDK (= 125.6422.04)
   - google_sign_in_ios (0.0.1):
     - AppAuth (>= 1.7.4)
     - Flutter
@@ -77,7 +77,7 @@ PODS:
     - Flutter
   - wakelock_plus (0.0.1):
     - Flutter
-  - WebRTC-SDK (114.5735.08)
+  - WebRTC-SDK (125.6422.04)
 
 DEPENDENCIES:
   - audio_session (from `.symlinks/plugins/audio_session/ios`)
@@ -156,7 +156,7 @@ SPEC CHECKSUMS:
   flutter_sound: b9236a5875299aaa4cef1690afd2f01d52a3f890
   flutter_sound_core: 427465f72d07ab8c3edbe8ffdde709ddacd3763c
   flutter_tts: b88dbc8655d3dc961bc4a796e4e16a4cc1795833
-  flutter_webrtc: f5711277e7c7c49949e62c2b24afc4965cd48028
+  flutter_webrtc: 89f078a5050779eaa4a6a4f472954737bb91f39f
   google_sign_in_ios: b48bb9af78576358a168361173155596c845f0b9
   GoogleSignIn: ce8c89bb9b37fb624b92e7514cc67335d1e277e4
   GoogleUtilities: 00c88b9a86066ef77f0da2fab05f65d7768ed8e1
@@ -174,8 +174,8 @@ SPEC CHECKSUMS:
   Try: 5ef669ae832617b3cee58cb2c6f99fb767a4ff96
   url_launcher_ios: 694010445543906933d732453a59da0a173ae33d
   wakelock_plus: e29112ab3ef0b318e58cfa5c32326458be66b556
-  WebRTC-SDK: c24d2a6c9f571f2ed42297cb8ffba9557093142b
+  WebRTC-SDK: c3d69a87e7185fad3568f6f3cff7c9ac5890acf3
 
-PODFILE CHECKSUM: eb108b7de23015647be35088e0000c9b718e07f8
+PODFILE CHECKSUM: c7911c34d0f1cd8a598f0a68c695729c6b40aed4
 
 COCOAPODS: 1.16.2

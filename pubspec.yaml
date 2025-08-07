@@ -64,7 +64,7 @@ dependencies:
   noise_meter: ^5.0.2 # For real-time microphone volume
   
   # OpenAI Realtime API dependencies
-  flutter_webrtc: ^0.9.48  # WebRTC for real-time communication
+  flutter_webrtc: ^0.11.7  # WebRTC for real-time communication
   flutter_dotenv: ^5.1.0   # Environment variables for API keys
 
 dev_dependencies:

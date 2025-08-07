@@ -44,6 +44,30 @@ class AIAOrchestrator:
                 "description": "Manages Google Calendar, including creating and listing events.",
                 "keywords": ["calendar", "event", "schedule", "meeting", "appointment"],
                 "capabilities": ["create event", "list events"]
+            },
+            "TravelAgent": {
+                "agent": None,  # Will be integrated with AIA backend
+                "description": "Professional travel agent with comprehensive flight services via Amadeus API. Handles flight search, booking reservations, seat selection, status tracking, delay predictions, and complete travel planning with real-time data for destinations worldwide.",
+                "keywords": ["flight", "voo", "viagem", "travel", "airplane", "avião", "booking", "reserva", "amadeus", "airport", "aeroporto", "ticket", "passagem", "trip", "destination", "destino", "hotel", "accommodation"],
+                "capabilities": ["flight search with natural language", "real flight bookings", "seat map selection", "flight status tracking", "delay prediction with ML", "airport information", "travel planning", "itinerary creation"]
+            },
+            "VehicleAgent": {
+                "agent": None,  # Will be integrated with AIA backend
+                "description": "Expert automotive assistant specializing in Brazilian vehicle information, FIPE pricing, vehicle lookup, brand and model data, market values, RENAVAM consultation, and vehicle debt checking. Provides accurate vehicle pricing and specifications using official FIPE and government data sources.",
+                "keywords": ["carro", "vehicle", "car", "fipe", "preço", "price", "veiculo", "placa", "plate", "renavam", "debito", "debt", "ipva", "multa", "fine", "detran", "licenciamento", "automotive", "automotivo"],
+                "capabilities": ["FIPE pricing consultation", "RENAVAM official data lookup", "automatic debt verification", "vehicle plate validation", "Brazilian vehicle information", "IPVA and fines checking", "market value assessment", "vehicle specifications"]
+            },
+            "ReminderAgent": {
+                "agent": None,  # Will be integrated with AIA backend
+                "description": "Specialized agent for creating and managing reminders for important dates and events. Supports flexible time configurations and provides clear confirmation messages.",
+                "keywords": ["reminder", "lembrete", "remind", "lembrar", "alert", "alerta", "notification", "notificação", "schedule", "agendar", "time", "tempo", "date", "data"],
+                "capabilities": ["create reminders", "list active reminders", "cancel reminders", "flexible time settings (days/minutes/seconds)", "clear confirmations"]
+            },
+            "WhatsAppAgent": {
+                "agent": None,  # Will be integrated with AIA backend
+                "description": "WhatsApp automation specialist for messaging, group management, and advanced communication features. Supports complete WhatsApp API integration including session management, media sharing, and group operations.",
+                "keywords": ["whatsapp", "message", "mensagem", "chat", "grupo", "group", "automation", "automação", "send", "enviar", "contact", "contato", "media", "mídia", "status"],
+                "capabilities": ["WhatsApp session management", "send messages and media", "group creation and management", "contact verification", "location sharing", "message reactions", "presence status", "QR code authentication", "phone pairing"]
             }
         }
         
