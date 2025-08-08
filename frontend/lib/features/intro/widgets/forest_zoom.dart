@@ -82,7 +82,7 @@ class _ForestZoomState extends State<ForestZoom> with TickerProviderStateMixin {
                       height: double.infinity,
                       decoration: const BoxDecoration(
                         image: DecorationImage(
-                          image: AssetImage('assets/foggy_forest.jpg'),
+                          image: AssetImage('assets/Upward Through the Forest Canopy.png'),
                           fit: BoxFit.cover,
                         ),
                       ),
