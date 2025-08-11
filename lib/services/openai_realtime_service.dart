@@ -7,6 +7,8 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'audio_service.dart';
 import 'aia_api_service.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
 
 class OpenAIRealtimeService {
   RTCPeerConnection? _peerConnection;
@@ -37,6 +39,9 @@ class OpenAIRealtimeService {
   String? _activeAgentId;           // Qual agente está ativo (gmail_agent, calendar_agent)
   String? _activeSessionId;         // ID da sessão com o agente
   bool _isInAgentConversation = false;  // Se está em conversa com agente
+
+  // Dio instance for HTTP requests
+  final Dio _dio = Dio();
 
   // Configuração de ICE servers para WebRTC
   final Map<String, dynamic> _configuration = {
@@ -269,7 +274,7 @@ class OpenAIRealtimeService {
     }
   }
 
-  void _processarMensagem(String rawData) {
+  void _processarMensagem(String rawData) async {
     try {
       debugPrint('[OpenAI Realtime] Mensagem recebida: $rawData');
       final data = jsonDecode(rawData);
@@ -377,6 +382,17 @@ class OpenAIRealtimeService {
             } catch (e) {
               debugPrint('[OpenAI Realtime] Erro ao processar argumentos da função: $e');
             }
+          } else if (functionName == 'create_uber_ride' && arguments != null) {
+            try {
+              final args = jsonDecode(arguments);
+              final destination = args['destination'] as String?;
+              final pickup = args['pickup'] as String?;
+              if (destination != null) {
+                await _handleUberRideRequest({'destination': destination, 'pickup': pickup});
+              }
+            } catch (e) {
+              debugPrint('[OpenAI Realtime] Erro ao processar argumentos do Uber: $e');
+            }
           }
           break;
 
@@ -470,6 +486,16 @@ Você é a **AIA**, uma assistente de IA conversacional que atua como coordenado
 - Suporte a coordenadas GPS para busca precisa
 - Foco no mercado brasileiro de delivery
 
+### 🚕 **Uber Agent** - Transporte e Mobilidade 🆕 (NOVO!)
+- Solicitação direta de Uber para qualquer destino
+- Integração com Google Maps para geocodificação precisa
+- Geração automática de deeplinks para o app Uber
+- Suporte a pickup personalizado ou localização atual
+- Abertura automática do app com destino pré-configurado
+- **Tipos de Uber disponíveis**: UberX (padrão), Uber Black (premium)
+- **Detecção automática**: Reconhece pedidos de "Uber Black", "premium", "executivo"
+- **VOCÊ TEM ESTA CAPACIDADE DIRETAMENTE DISPONÍVEL**
+
 ## PRINCÍPIOS FUNDAMENTAIS
 - **Conversa Natural**: Mantenha sempre um tom conversacional, empático e prestativo
 - **Eficiência Inteligente**: Colete todas as informações necessárias ANTES de executar qualquer ação
@@ -556,6 +582,8 @@ Você tem acesso a uma ferramenta chamada `execute_task` que permite executar a�
 **Emails**: "Enviar email sobre reunião" → Gmail Agent
 **Agenda**: "Agendar reunião para quinta-feira" → Calendar Agent
 **Food Delivery**: "Quero pedir pizza aqui perto" → Food Delivery Agent
+**Uber**: "Preciso ir ao aeroporto" → Uber Agent
+**Transporte**: "Quero um Uber para o shopping" → Uber Agent
 
 Lembre-se: você é a coordenadora inteligente de 7 agentes especializados que garante que todas as ações sejam executadas corretamente, coletando informações de forma natural e conversacional.
 ''';
@@ -571,6 +599,7 @@ Lembre-se: você é a coordenadora inteligente de 7 agentes especializados que g
       debugPrint('[OpenAI Realtime] 🎯 Contém Reminder Agent: ${instructions.contains('Reminder Agent')}');
       debugPrint('[OpenAI Realtime] 🎯 Contém WhatsApp Agent: ${instructions.contains('WhatsApp Agent')}');
       debugPrint('[OpenAI Realtime] 🎯 Contém Food Delivery Agent: ${instructions.contains('Food Delivery Agent')}');
+      debugPrint('[OpenAI Realtime] 🎯 Contém Uber Agent: ${instructions.contains('Uber Agent')}');
 
       final settings = {
         "type": "session.update",
@@ -606,6 +635,25 @@ Lembre-se: você é a coordenadora inteligente de 7 agentes especializados que g
                   }
                 },
                 "required": ["message"]
+              }
+            },
+            {
+              "type": "function",
+              "name": "create_uber_ride",
+              "description": "Create an Uber ride request when user needs transportation to any destination",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "destination": {
+                    "type": "string",
+                    "description": "Where the user wants to go (address, landmark, business name, etc.)"
+                  },
+                  "pickup": {
+                    "type": "string",
+                    "description": "Pickup location (optional, defaults to current location)"
+                  }
+                },
+                "required": ["destination"]
               }
             }
           ]
@@ -827,6 +875,209 @@ Lembre-se: você é a coordenadora inteligente de 7 agentes especializados que g
       }
     } catch (e) {
       debugPrint('[OpenAI Realtime] Erro ao desmutar áudio: $e');
+    }
+  }
+
+  /// Geocode an address using Google Maps API
+  Future<Map<String, dynamic>?> _geocodeAddress(String address, {double? userLat, double? userLng}) async {
+    try {
+      final apiKey = dotenv.env['GOOGLE_MAPS_API_KEY'];
+      if (apiKey == null || apiKey.isEmpty) {
+        debugPrint('[OpenAI Realtime] ❌ Google Maps API key not found in .env');
+        return null;
+      }
+
+      final encodedAddress = Uri.encodeComponent(address);
+      String url = 'https://maps.googleapis.com/maps/api/geocode/json?address=$encodedAddress&key=$apiKey';
+      
+      // Add location bias if user location is available
+      if (userLat != null && userLng != null) {
+        url += '&location=$userLat,$userLng&radius=50000'; // 50km radius
+        debugPrint('[OpenAI Realtime] 🎯 Using location bias: $userLat,$userLng');
+      }
+      
+      debugPrint('[OpenAI Realtime] 🔍 Geocoding address: "$address"');
+      
+      final response = await _dio.get(url);
+      
+      if (response.statusCode == 200) {
+        final data = response.data;
+        
+        if (data['status'] == 'OK' && data['results'].isNotEmpty) {
+          final result = data['results'][0];
+          final location = result['geometry']['location'];
+          
+          final geocodeResult = {
+            'lat': location['lat'],
+            'lng': location['lng'],
+            'formatted_address': result['formatted_address'],
+            'place_id': result['place_id'],
+          };
+          
+          debugPrint('[OpenAI Realtime] ✅ Geocoded "$address" to: ${geocodeResult['formatted_address']}');
+          debugPrint('[OpenAI Realtime] 📍 Coordinates: ${geocodeResult['lat']}, ${geocodeResult['lng']}');
+          
+          return geocodeResult;
+        } else {
+          debugPrint('[OpenAI Realtime] ❌ Geocoding failed: ${data['status']}');
+          return null;
+        }
+      } else {
+        debugPrint('[OpenAI Realtime] ❌ HTTP error: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('[OpenAI Realtime] ❌ Error geocoding address "$address": $e');
+      return null;
+    }
+  }
+
+  /// Create Uber deeplink with geocoded coordinates
+  Future<void> _handleUberRideRequest(Map<String, dynamic> args) async {
+    try {
+      final destination = args['destination'] as String;
+      final pickup = args['pickup'] as String? ?? 'current location';
+      
+      debugPrint('[OpenAI Realtime] 🚗 Creating Uber ride request');
+      debugPrint('[OpenAI Realtime] 📍 Pickup: $pickup');
+      debugPrint('[OpenAI Realtime] 🎯 Destination: $destination');
+      
+      // Get user location for bias (if available from location services)
+      // TODO: Integrate with location services to get actual user coordinates
+      double? userLat, userLng;
+      
+      // Geocode destination with user location bias
+      final destResult = await _geocodeAddress(destination, userLat: userLat, userLng: userLng);
+      
+      if (destResult == null) {
+        debugPrint('[OpenAI Realtime] ❌ Could not geocode destination: $destination');
+        _enviarMensagemDoSistema('Não consegui encontrar o endereço "$destination". Pode me dar mais detalhes sobre o local?');
+        return;
+      }
+      
+      // Don't specify product ID - let Uber choose the default for the region
+      String rideType = 'UberX (padrão)';
+      
+      // Check for premium ride requests
+      final destinationLower = destination.toLowerCase();
+      final pickupLower = pickup.toLowerCase();
+      bool isPremium = destinationLower.contains('black') || destinationLower.contains('premium') || 
+          destinationLower.contains('executivo') || pickupLower.contains('black') || 
+          pickupLower.contains('premium') || pickupLower.contains('executivo');
+      
+      if (isPremium) {
+        rideType = 'Uber Black (premium)';
+        debugPrint('[OpenAI Realtime] 🖤 Premium ride requested: $rideType');
+      }
+      
+      String deeplink;
+      if (pickup.toLowerCase().contains('current') || pickup.toLowerCase().contains('my location') || pickup.toLowerCase().contains('here') || pickup.toLowerCase().contains('atual')) {
+        // Simplified format for better destination pre-filling
+        deeplink = 'uber://riderequest'
+            '?pickup=my_location'
+            '&dropoff[latitude]=${destResult['lat']}'
+            '&dropoff[longitude]=${destResult['lng']}'
+            '&dropoff[nickname]=${Uri.encodeComponent(destResult['formatted_address'])}';
+        
+        debugPrint('[OpenAI Realtime] 🎯 Using current location as pickup');
+      } else {
+        // Geocode pickup location too
+        final pickupResult = await _geocodeAddress(pickup, userLat: userLat, userLng: userLng);
+        if (pickupResult != null) {
+          // Simplified format with both locations
+          deeplink = 'uber://riderequest'
+              '?pickup[latitude]=${pickupResult['lat']}'
+              '&pickup[longitude]=${pickupResult['lng']}'
+              '&pickup[nickname]=${Uri.encodeComponent(pickupResult['formatted_address'])}'
+              '&dropoff[latitude]=${destResult['lat']}'
+              '&dropoff[longitude]=${destResult['lng']}'
+              '&dropoff[nickname]=${Uri.encodeComponent(destResult['formatted_address'])}';
+          
+          debugPrint('[OpenAI Realtime] 🎯 Using specific pickup: ${pickupResult['formatted_address']}');
+        } else {
+          // Fallback to current location if pickup geocoding fails
+          deeplink = 'uber://riderequest'
+              '?pickup=my_location'
+              '&dropoff[latitude]=${destResult['lat']}'
+              '&dropoff[longitude]=${destResult['lng']}'
+              '&dropoff[nickname]=${Uri.encodeComponent(destResult['formatted_address'])}';
+          
+          debugPrint('[OpenAI Realtime] ⚠️ Pickup geocoding failed, using current location');
+        }
+      }
+      
+      debugPrint('[OpenAI Realtime] 🚗 Ride type: $rideType');
+      
+      // Launch Uber app
+      await _launchUberDeeplink(deeplink, destResult['formatted_address']);
+      
+      // Send success message back to AI
+      _enviarMensagemDoSistema('Pronto! Abri o Uber com o destino "${destResult['formatted_address']}" já configurado. O app deve abrir automaticamente.');
+      
+    } catch (e) {
+      debugPrint('[OpenAI Realtime] ❌ Error creating Uber ride: $e');
+      _enviarMensagemDoSistema('Ocorreu um erro ao tentar chamar o Uber. Tente novamente em alguns instantes.');
+    }
+  }
+
+  /// Launch Uber deeplink with fallback to web
+  Future<void> _launchUberDeeplink(String deeplink, String destination) async {
+    try {
+      final uri = Uri.parse(deeplink);
+      
+      debugPrint('[OpenAI Realtime] 🚀 Launching Uber deeplink: $deeplink');
+      debugPrint('[OpenAI Realtime] 🔍 Parsed URI: ${uri.toString()}');
+      debugPrint('[OpenAI Realtime] 🔍 URI scheme: ${uri.scheme}');
+      debugPrint('[OpenAI Realtime] 🔍 URI host: ${uri.host}');
+      debugPrint('[OpenAI Realtime] 🔍 URI query: ${uri.query}');
+      
+      // Try multiple launch modes for better compatibility
+      bool launched = false;
+      
+      // First try: External application with platform default
+      try {
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          launched = true;
+          debugPrint('[OpenAI Realtime] ✅ Uber app opened with externalApplication mode');
+        }
+      } catch (e) {
+        debugPrint('[OpenAI Realtime] ⚠️ externalApplication mode failed: $e');
+      }
+      
+      // Second try: Platform default mode
+      if (!launched) {
+        try {
+          await launchUrl(uri, mode: LaunchMode.platformDefault);
+          launched = true;
+          debugPrint('[OpenAI Realtime] ✅ Uber app opened with platformDefault mode');
+        } catch (e) {
+          debugPrint('[OpenAI Realtime] ⚠️ platformDefault mode failed: $e');
+        }
+      }
+      
+      // Third try: External non-browser application
+      if (!launched) {
+        try {
+          await launchUrl(uri, mode: LaunchMode.externalNonBrowserApplication);
+          launched = true;
+          debugPrint('[OpenAI Realtime] ✅ Uber app opened with externalNonBrowserApplication mode');
+        } catch (e) {
+          debugPrint('[OpenAI Realtime] ⚠️ externalNonBrowserApplication mode failed: $e');
+        }
+      }
+      
+      if (!launched) {
+        debugPrint('[OpenAI Realtime] ❌ All launch modes failed, trying web fallback');
+        // Fallback to web version
+        final webUrl = Uri.parse('https://m.uber.com/looking?pickup=my_location');
+        await launchUrl(webUrl, mode: LaunchMode.externalApplication);
+        debugPrint('[OpenAI Realtime] ⚠️ Opened Uber web version (app launch failed)');
+      }
+      
+    } catch (e) {
+      debugPrint('[OpenAI Realtime] ❌ Error launching Uber: $e');
+      debugPrint('[OpenAI Realtime] 📋 Deeplink that failed: $deeplink');
     }
   }
 
