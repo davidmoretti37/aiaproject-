@@ -182,6 +182,10 @@ class OpenAIRealtimeService {
       AudioService.maximizeSystemVolume();
       debugPrint('[OpenAI Realtime] 🔊 Volume do sistema configurado para máximo');
       
+      // Habilitar reprodução de áudio em background
+      await AudioService.enableBackgroundAudio();
+      debugPrint('[OpenAI Realtime] 🎵 Background audio habilitado');
+      
       return true;
     } catch (e) {
       debugPrint('[OpenAI Realtime] Erro ao configurar áudio local: $e');
@@ -1086,6 +1090,10 @@ Lembre-se: você é a coordenadora inteligente de 7 agentes especializados que g
     
     try {
       await AudioService.pararCapturaDeAudio();
+      
+      // Desabilitar background audio
+      await AudioService.disableBackgroundAudio();
+      debugPrint('[OpenAI Realtime] 🔇 Background audio desabilitado');
       
       if (_dataChannel != null) {
         await _dataChannel!.close();
