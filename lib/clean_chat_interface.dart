@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'services/openai_realtime_service.dart';
 import 'services/chat_service.dart';
 import 'widgets/reminder_test_widget.dart';
+import 'screens/featured_screen.dart';
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -478,6 +479,24 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
                 fontWeight: FontWeight.w600,
               ),
             ),
+          ),
+          
+          // Featured Partners Button
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const FeaturedScreen(),
+                ),
+              );
+            },
+            icon: const Icon(
+              Icons.business,
+              color: Colors.white70,
+              size: 24,
+            ),
+            tooltip: 'Featured Partners',
           ),
           
           // Test Reminders Button
