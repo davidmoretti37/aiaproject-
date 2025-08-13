@@ -6,7 +6,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'services/openai_realtime_service.dart';
 import 'services/chat_service.dart';
 import 'widgets/reminder_test_widget.dart';
+import 'widgets/bottom_navigation.dart';
 import 'screens/featured_screen.dart';
+import 'screens/settings_screen.dart';
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -56,6 +58,9 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
   bool _isRealtimeConnecting = false;
   bool _isAISpeaking = false;
   OpenAIRealtimeService? _openAIService;
+  
+  // Navigation state
+  int _currentNavIndex = 0;
   
   String _listeningText = '';
   List<ChatMessage> _messages = [];
@@ -407,6 +412,38 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
     super.dispose();
   }
 
+  void _onNavTap(int index) {
+    setState(() {
+      _currentNavIndex = index;
+    });
+    
+    switch (index) {
+      case 0: // Chat - já estamos aqui
+        break;
+      case 1: // Partners
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const FeaturedScreen(),
+          ),
+        );
+        break;
+      case 2: // Reminders
+        setState(() {
+          _showReminderTest = !_showReminderTest;
+        });
+        break;
+      case 3: // Settings
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SettingsScreen(),
+          ),
+        );
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -416,35 +453,49 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
         builder: (context, child) {
           return Opacity(
             opacity: _fadeInOpacity.value,
-            child: SafeArea(
-              child: Column(
-                children: [
-                  // Header
-                  _buildHeader(),
-                  
-                  // Reminder Test Widget (quando ativado)
-                  if (_showReminderTest)
-                    Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.orange.withOpacity(0.3),
+            child: Stack(
+              children: [
+                // Main content
+                SafeArea(
+                  child: Column(
+                    children: [
+                      // Header
+                      _buildHeader(),
+                      
+                      // Reminder Test Widget (quando ativado)
+                      if (_showReminderTest)
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.orange.withOpacity(0.3),
+                            ),
+                          ),
+                          child: const ReminderTestWidget(),
                         ),
+                      
+                      // Messages
+                      Expanded(
+                        child: _buildMessagesList(),
                       ),
-                      child: const ReminderTestWidget(),
-                    ),
-                  
-                  // Messages
-                  Expanded(
-                    child: _buildMessagesList(),
+                      
+                      // Input Area with bottom padding for floating navbar
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 120),
+                        child: _buildInputArea(),
+                      ),
+                    ],
                   ),
-                  
-                  // Input Area
-                  _buildInputArea(),
-                ],
-              ),
+                ),
+                
+                // Floating Navigation Bar
+                AIABottomNavigation(
+                  currentIndex: _currentNavIndex,
+                  onTap: _onNavTap,
+                ),
+              ],
             ),
           );
         },

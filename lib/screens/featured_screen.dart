@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class FeaturedScreen extends StatelessWidget {
   const FeaturedScreen({super.key});
@@ -8,19 +7,10 @@ class FeaturedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEAEBEE),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFEAEBEE),
-        elevation: 0,
-        title: Text(
-          "Featured Partners",
-          style: GoogleFonts.inter(
-            color: Colors.black87,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        iconTheme: const IconThemeData(color: Colors.black87),
+        backgroundColor: Colors.white,
+        title: const Text("Featured Partners"),
       ),
       body: const Body(),
     );
@@ -64,19 +54,12 @@ class _BodyState extends State<Body> {
                 : RestaurantInfoBigCard(
                     // Images are List<String>
                     images: demoBigImages..shuffle(),
-                    name: "AIA Partner ${index + 1}",
-                    rating: 4.3 + (index * 0.1),
-                    numOfRating: 200 + (index * 50),
-                    deliveryTime: 25 + (index * 5),
-                    foodType: const ["AI Services", "Automation", "Smart Solutions"],
-                    press: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Tapped on AIA Partner ${index + 1}'),
-                          backgroundColor: Colors.blue,
-                        ),
-                      );
-                    },
+                    name: "McDonald's",
+                    rating: 4.3,
+                    numOfRating: 200,
+                    deliveryTime: 25,
+                    foodType: const ["Chinese", "American", "Deshi food"],
+                    press: () {},
                   ),
           ),
         ),
@@ -108,82 +91,61 @@ class RestaurantInfoBigCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: press,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.7),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // pass list of images here
-            BigCardImageSlide(images: images),
-            const SizedBox(height: 12),
-            Text(
-              name, 
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.black87,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // pass list of images here
+          BigCardImageSlide(images: images),
+          const SizedBox(height: 8),
+          Text(name, style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 4),
+          PriceRangeAndFoodtype(foodType: foodType),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              RatingWithCounter(rating: rating, numOfRating: numOfRating),
+              const SizedBox(width: 8),
+              SvgPicture.string(
+                clockIconSvg,
+                height: 20,
+                width: 20,
+                colorFilter: ColorFilter.mode(
+                  Theme.of(context)
+                      .textTheme
+                      .bodyLarge!
+                      .color!
+                      .withOpacity(0.5),
+                  BlendMode.srcIn,
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            PriceRangeAndFoodtype(foodType: foodType),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                RatingWithCounter(rating: rating, numOfRating: numOfRating),
-                const SizedBox(width: 8),
-                SvgPicture.string(
-                  clockIconSvg,
-                  height: 20,
-                  width: 20,
-                  colorFilter: ColorFilter.mode(
-                    Colors.black54,
-                    BlendMode.srcIn,
-                  ),
+              const SizedBox(width: 8),
+              Text(
+                "$deliveryTime Min",
+                style: Theme.of(context).textTheme.labelSmall,
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: SmallDot(),
+              ),
+              SvgPicture.string(
+                deliveryIconSvg,
+                height: 20,
+                width: 20,
+                colorFilter: ColorFilter.mode(
+                  Theme.of(context)
+                      .textTheme
+                      .bodyLarge!
+                      .color!
+                      .withOpacity(0.5),
+                  BlendMode.srcIn,
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  "$deliveryTime Min",
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.black54,
-                  ),
-                ),
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: SmallDot(),
-                ),
-                SvgPicture.string(
-                  deliveryIconSvg,
-                  height: 20,
-                  width: 20,
-                  colorFilter: ColorFilter.mode(
-                    Colors.black54,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  isFreeDelivery ? "Free" : "Paid",
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    color: Colors.black54,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+              const SizedBox(width: 8),
+              Text(isFreeDelivery ? "Free" : "Paid",
+                  style: Theme.of(context).textTheme.labelSmall),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -203,25 +165,14 @@ class PriceRangeAndFoodtype extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Text(
-          priceRange, 
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            color: Colors.black54,
-          ),
-        ),
+        Text(priceRange, style: Theme.of(context).textTheme.bodyMedium),
         ...List.generate(
           foodType.length,
           (index) => Row(
             children: [
               buildSmallDot(),
-              Text(
-                foodType[index],
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: Colors.black54,
-                ),
-              ),
+              Text(foodType[index],
+                  style: Theme.of(context).textTheme.bodyMedium),
             ],
           ),
         ),
@@ -325,11 +276,11 @@ class RatingWithCounter extends StatelessWidget {
     return Row(
       children: [
         Text(
-          rating.toStringAsFixed(1),
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            color: Colors.black54,
-          ),
+          rating.toString(),
+          style: Theme.of(context)
+              .textTheme
+              .labelSmall!
+              .copyWith(color: const Color(0xFF010F07).withOpacity(0.74)),
         ),
         const SizedBox(width: 8),
         SvgPicture.string(
@@ -342,13 +293,11 @@ class RatingWithCounter extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          "$numOfRating+ Ratings",
-          style: GoogleFonts.inter(
-            fontSize: 12,
-            color: Colors.black54,
-          ),
-        ),
+        Text("$numOfRating+ Ratings",
+            style: Theme.of(context)
+                .textTheme
+                .labelSmall!
+                .copyWith(color: const Color(0xFF010F07).withOpacity(0.74))),
       ],
     );
   }
@@ -365,7 +314,7 @@ class SmallDot extends StatelessWidget {
       height: 4,
       width: 4,
       decoration: BoxDecoration(
-        color: Colors.black54,
+        color: Theme.of(context).textTheme.bodyLarge!.color!.withOpacity(0.4),
         shape: BoxShape.circle,
       ),
     );
@@ -379,36 +328,22 @@ class BigCardScalton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.7),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const AspectRatio(
-            aspectRatio: 1.81,
-            child: BigCardImageSlideScalton(),
-          ),
-          const SizedBox(height: 16),
-          ScaltonLine(
-            width: MediaQuery.of(context).size.width * 0.8,
-          ),
-          const SizedBox(height: 16),
-          const ScaltonLine(),
-          const SizedBox(height: 16),
-          const ScaltonLine(),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const AspectRatio(
+          aspectRatio: 1.81,
+          child: BigCardImageSlideScalton(),
+        ),
+        const SizedBox(height: 16),
+        ScaltonLine(
+          width: MediaQuery.of(context).size.width * 0.8,
+        ),
+        const SizedBox(height: 16),
+        const ScaltonLine(),
+        const SizedBox(height: 16),
+        const ScaltonLine(),
+      ],
     );
   }
 }

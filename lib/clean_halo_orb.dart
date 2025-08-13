@@ -6,6 +6,9 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'ai_service.dart';
 import 'widgets/aia_video_player.dart';
+import 'widgets/bottom_navigation.dart';
+import 'screens/featured_screen.dart';
+import 'screens/settings_screen.dart';
 import 'services/openai_realtime_service.dart';
 import 'services/audio_service.dart';
 import 'dart:async';
@@ -69,6 +72,10 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   
   // Interaction tracking
   bool _hasInteracted = false;
+  
+  // Navigation state
+  int _currentNavIndex = 0;
+  bool _showReminderWidget = false;
 
   @override
   void initState() {
@@ -405,6 +412,34 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
     super.dispose();
   }
 
+  void _onNavItemTapped(int index) {
+    setState(() {
+      _currentNavIndex = index;
+    });
+
+    switch (index) {
+      case 0: // Chat - stay on current screen
+        break;
+      case 1: // Partners
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const FeaturedScreen()),
+        );
+        break;
+      case 2: // Reminders
+        setState(() {
+          _showReminderWidget = !_showReminderWidget;
+        });
+        break;
+      case 3: // Settings
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SettingsScreen()),
+        );
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -526,6 +561,10 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
             ),
           );
         },
+      ),
+      bottomNavigationBar: AIABottomNavigation(
+        currentIndex: _currentNavIndex,
+        onTap: _onNavItemTapped,
       ),
     );
   }
