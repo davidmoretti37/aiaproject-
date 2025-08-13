@@ -10,7 +10,6 @@ import 'package:calma_flutter/core/services/supabase_service.dart';
 import 'package:calma_flutter/services/ai_prompt_service.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:url_launcher/url_launcher.dart';
-import 'package:dio/dio.dart';
 
 class OpenAIRealtimeService {
   RTCPeerConnection? _peerConnection;
@@ -36,9 +35,6 @@ class OpenAIRealtimeService {
   DateTime? _conversationStartTime;
   DateTime? _currentExchangeStart;
   int _exchangeCounter = 0;
-
-  // Dio instance for HTTP requests
-  final Dio _dio = Dio();
 
   // Configuração de ICE servers para WebRTC
   final Map<String, dynamic> _configuration = {
@@ -281,7 +277,6 @@ class OpenAIRealtimeService {
           
         case 'session.updated':
           debugPrint('[AIA] Sessão atualizada, pronta para ouvir');
-          debugPrint('[AIA] ✅ Função create_uber_ride deve estar disponível para a IA agora');
           onListeningStarted?.call();
           break;
           
@@ -293,30 +288,6 @@ class OpenAIRealtimeService {
           
         case 'response.done':
           debugPrint('[AIA] Resposta concluída');
-          
-          // Check if this response contains a function call
-          final response = data['response'];
-          if (response != null && response['output'] != null && response['output'].isNotEmpty) {
-            final output = response['output'][0];
-            if (output['type'] == 'function_call') {
-              final functionName = output['name'];
-              final argumentsJson = output['arguments'] as String;
-              final callId = output['call_id'];
-              
-              debugPrint('[AIA] 🔧 Function call detected: $functionName');
-              debugPrint('[AIA] 📋 Arguments JSON: $argumentsJson');
-              debugPrint('[AIA] 🆔 Call ID: $callId');
-              
-              if (functionName == 'create_uber_ride') {
-                final arguments = jsonDecode(argumentsJson);
-                await _handleUberRideRequest(arguments);
-                
-                // After handling the function call, we need to provide the result back to the model
-                await _sendFunctionCallResult(callId, 'Uber ride request processed successfully');
-              }
-            }
-          }
-          
           onConversationDone?.call();
           break;
           
@@ -338,6 +309,12 @@ class OpenAIRealtimeService {
             _currentUserMessage = transcript.trim();
             _currentExchangeStart = DateTime.now();
             debugPrint('[AIA] Fala do usuário: "$transcript"');
+            
+            // Verificar se o usuário solicitou o Airbnb
+            if (_currentUserMessage.toLowerCase().contains('quero um airbnb')) {
+              debugPrint('[AIA] Detectada solicitação de Airbnb, abrindo deeplink...');
+              _abrirAirbnb();
+            }
           }
           break;
 
@@ -374,10 +351,6 @@ class OpenAIRealtimeService {
           
         default:
           debugPrint("[AIA] Evento desconhecido: $type");
-          // Log all unknown events to help debug function calls
-          if (type.contains('function') || type.contains('tool') || type.contains('call')) {
-            debugPrint("[AIA] 🔍 Possível evento de função: $rawData");
-          }
       }
     } catch (e) {
       debugPrint("[AIA] Erro ao processar evento: $e");
@@ -389,55 +362,45 @@ class OpenAIRealtimeService {
     if (_dataChannel?.state == RTCDataChannelState.RTCDataChannelOpen) {
       String instructions;
 
-      // 🚀 BYPASS COMPLETO DA API - USAR APENAS PROMPT LOCAL COM UBER
-      debugPrint('[AIA] 🚨🚨🚨 VERSÃO ATUALIZADA COM UBER TOOL - TESTE 123 🚨🚨🚨');
-      debugPrint('[AIA] 🔄 BYPASS da API - usando apenas prompt local com Uber...');
-      
-      // Criar prompt direto com instruções do Uber - MUITO MAIS EXPLÍCITO
-      String basePrompt = '''
-🚨 VERSÃO ATUALIZADA - TESTE 123 🚨
-
-Você é Áia, uma assistente empática que conversa em português brasileiro.
-
-ATENÇÃO CRÍTICA: VOCÊ TEM UM AGENTE ESPECIALIZADO PARA UBER!
-
-VOCÊ TEM DISPONÍVEL:
-- Função: create_uber_ride
-- Capacidade: Chamar Uber para qualquer destino
-- Agente especializado: SIM, VOCÊ MESMA!
-
-NUNCA DIGA:
-- "Não tenho agente especializado"
-- "Não posso ajudar com transporte"
-- "Não tenho essa funcionalidade"
-
-SEMPRE DIGA:
-- "Posso chamar um Uber para você!"
-- "Vou solicitar um Uber agora mesmo!"
-- "Claro! Para onde você precisa ir?"
-
-INSTRUÇÕES OBRIGATÓRIAS:
-1. Quando usuário mencionar: transporte, Uber, táxi, ir a algum lugar, aeroporto, shopping, etc.
-2. IMEDIATAMENTE use a função create_uber_ride
-3. Seja confiante: "Vou chamar um Uber para você!"
-4. NUNCA hesite ou diga que não pode
-
-VOCÊ É O AGENTE ESPECIALIZADO EM TRANSPORTE!
-''';
-
-      if (userName != null && userName!.isNotEmpty) {
-        instructions = basePrompt.replaceAll('usuário', userName!);
-        debugPrint('[AIA] ✅ Prompt local com Uber criado para: "$userName"');
-      } else {
-        instructions = basePrompt;
-        debugPrint('[AIA] ✅ Prompt local com Uber criado (sem nome específico)');
-      }
-      
-      // Verificar se as instruções do Uber estão presentes
-      if (instructions.contains('create_uber_ride')) {
-        debugPrint('[AIA] ✅ Instruções do Uber confirmadas no prompt!');
-      } else {
-        debugPrint('[AIA] ❌ ERRO: Instruções do Uber não encontradas!');
+      try {
+        // 🚀 NOVA INTEGRAÇÃO: Buscar prompt do banco de dados
+        debugPrint('[AIA] 🔄 Buscando prompt do banco de dados...');
+        instructions = await AiPromptService.getActivePrompt(userName: userName);
+        
+        debugPrint('[AIA] ✅ Prompt carregado do banco (${instructions.length} chars)');
+        debugPrint('[AIA] userName processado: "${userName ?? 'não disponível'}"');
+        
+        // Log do início do prompt para verificação
+        final previewLength = instructions.length > 300 ? 300 : instructions.length;
+        debugPrint('[AIA] Início do prompt: ${instructions.substring(0, previewLength)}...');
+        
+        // Verificar se ainda há placeholders não substituídos
+        if (instructions.contains('[PREFERRED_NAME]')) {
+          debugPrint('[AIA] ⚠️ ATENÇÃO: [PREFERRED_NAME] ainda presente no prompt!');
+        } else {
+          debugPrint('[AIA] ✅ Prompt processado com sucesso');
+        }
+        
+      } catch (e, stackTrace) {
+        debugPrint('[AIA] ❌ Erro ao buscar prompt do banco: $e');
+        debugPrint('[AIA] 📍 Stack: $stackTrace');
+        
+        // Fallback para arquivo local se o banco falhar
+        try {
+          debugPrint('[AIA] 🔄 Tentando fallback para arquivo local...');
+          String xmlContent = await rootBundle.loadString('assets/aia_instructions.xml');
+          
+          if (userName != null && userName!.isNotEmpty) {
+            instructions = xmlContent.replaceAll('[PREFERRED_NAME]', userName!);
+            debugPrint('[AIA] ✅ Fallback local com nome: "$userName"');
+          } else {
+            instructions = xmlContent.replaceAll('[PREFERRED_NAME]', 'você');
+            debugPrint('[AIA] ⚠️ Fallback local sem nome');
+          }
+        } catch (e2) {
+          debugPrint('[AIA] ❌ Erro no fallback local: $e2');
+          instructions = 'Você é Áia, uma assistente empática que conversa em português brasileiro.';
+        }
       }
 
       final settings = {
@@ -458,30 +421,7 @@ VOCÊ É O AGENTE ESPECIALIZADO EM TRANSPORTE!
           },
           "temperature": 0.8,
           "max_response_output_tokens": "inf",
-          "instructions": instructions,
-          "tools": [
-            {
-              "type": "function",
-              "function": {
-                "name": "create_uber_ride",
-                "description": "Create an Uber ride request when user needs transportation to any destination",
-                "parameters": {
-                  "type": "object",
-                  "properties": {
-                    "destination": {
-                      "type": "string",
-                      "description": "Where the user wants to go (address, landmark, business name, etc.)"
-                    },
-                    "pickup": {
-                      "type": "string",
-                      "description": "Pickup location (optional, defaults to current location)"
-                    }
-                  },
-                  "required": ["destination"]
-                }
-              }
-            }
-          ]
+          "instructions": instructions
         }
       };
       
@@ -490,8 +430,6 @@ VOCÊ É O AGENTE ESPECIALIZADO EM TRANSPORTE!
       final jsonString = jsonEncode(settings);
       debugPrint('[AIA] 📤 Enviando configuração para OpenAI...');
       debugPrint('[AIA] 📊 Tamanho da configuração: ${jsonString.length} chars');
-      debugPrint('[AIA] 🔧 Tools configuradas: ${settings['session']['tools']}');
-      debugPrint('[AIA] 📋 Configuração completa: $jsonString');
       _dataChannel!.send(RTCDataChannelMessage(jsonString));
     } else {
       debugPrint("[AIA] ❌ Canal de dados não está pronto. Estado: ${_dataChannel?.state}");
@@ -588,171 +526,30 @@ VOCÊ É O AGENTE ESPECIALIZADO EM TRANSPORTE!
     }
   }
 
-  /// Geocode an address using Google Maps API
-  Future<Map<String, dynamic>?> _geocodeAddress(String address, {double? userLat, double? userLng}) async {
+  /// Abre o aplicativo Airbnb com um deeplink específico para um quarto
+  Future<void> _abrirAirbnb() async {
     try {
-      final apiKey = dotenv.env['GOOGLE_MAPS_API_KEY'];
-      if (apiKey == null || apiKey.isEmpty) {
-        debugPrint('[AIA] ❌ Google Maps API key not found in .env');
-        return null;
-      }
-
-      final encodedAddress = Uri.encodeComponent(address);
-      String url = 'https://maps.googleapis.com/maps/api/geocode/json?address=$encodedAddress&key=$apiKey';
+      // Deeplink para o Airbnb com ID específico do quarto
+      final Uri url = Uri.parse('airbnb://rooms/1358731300179127707');
       
-      // Add location bias if user location is available
-      if (userLat != null && userLng != null) {
-        url += '&location=$userLat,$userLng&radius=50000'; // 50km radius
-        debugPrint('[AIA] 🎯 Using location bias: $userLat,$userLng');
-      }
+      debugPrint('[AIA] Tentando abrir deeplink: ${url.toString()}');
       
-      debugPrint('[AIA] 🔍 Geocoding address: "$address"');
-      
-      final response = await _dio.get(url);
-      
-      if (response.statusCode == 200) {
-        final data = response.data;
-        
-        if (data['status'] == 'OK' && data['results'].isNotEmpty) {
-          final result = data['results'][0];
-          final location = result['geometry']['location'];
-          
-          final geocodeResult = {
-            'lat': location['lat'],
-            'lng': location['lng'],
-            'formatted_address': result['formatted_address'],
-            'place_id': result['place_id'],
-          };
-          
-          debugPrint('[AIA] ✅ Geocoded "$address" to: ${geocodeResult['formatted_address']}');
-          debugPrint('[AIA] 📍 Coordinates: ${geocodeResult['lat']}, ${geocodeResult['lng']}');
-          
-          return geocodeResult;
-        } else {
-          debugPrint('[AIA] ❌ Geocoding failed: ${data['status']}');
-          return null;
-        }
+      // Verificar se o aplicativo pode ser aberto
+      if (await canLaunchUrl(url)) {
+        debugPrint('[AIA] Abrindo deeplink do Airbnb...');
+        await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication,
+        );
+        debugPrint('[AIA] Deeplink do Airbnb aberto com sucesso');
       } else {
-        debugPrint('[AIA] ❌ HTTP error: ${response.statusCode}');
-        return null;
-      }
-    } catch (e) {
-      debugPrint('[AIA] ❌ Error geocoding address "$address": $e');
-      return null;
-    }
-  }
-
-  /// Create Uber deeplink with geocoded coordinates
-  Future<void> _handleUberRideRequest(Map<String, dynamic> args) async {
-    try {
-      final destination = args['destination'] as String;
-      final pickup = args['pickup'] as String? ?? 'current location';
-      
-      debugPrint('[AIA] 🚗 Creating Uber ride request');
-      debugPrint('[AIA] 📍 Pickup: $pickup');
-      debugPrint('[AIA] 🎯 Destination: $destination');
-      
-      // Get user location for bias (if available from location services)
-      // TODO: Integrate with location services to get actual user coordinates
-      double? userLat, userLng;
-      
-      // Geocode destination with user location bias
-      final destResult = await _geocodeAddress(destination, userLat: userLat, userLng: userLng);
-      
-      if (destResult == null) {
-        debugPrint('[AIA] ❌ Could not geocode destination: $destination');
-        return;
-      }
-      
-      String deeplink;
-      if (pickup.toLowerCase().contains('current') || pickup.toLowerCase().contains('my location') || pickup.toLowerCase().contains('here')) {
-        // Use current location pickup
-        deeplink = 'uber://riderequest?pickup=my_location'
-            '&dropoff[latitude]=${destResult['lat']}'
-            '&dropoff[longitude]=${destResult['lng']}'
-            '&dropoff[formatted_address]=${Uri.encodeComponent(destResult['formatted_address'])}';
-        
-        debugPrint('[AIA] 🎯 Using current location as pickup');
-      } else {
-        // Geocode pickup location too
-        final pickupResult = await _geocodeAddress(pickup, userLat: userLat, userLng: userLng);
-        if (pickupResult != null) {
-          deeplink = 'uber://riderequest'
-              '?pickup[latitude]=${pickupResult['lat']}'
-              '&pickup[longitude]=${pickupResult['lng']}'
-              '&pickup[formatted_address]=${Uri.encodeComponent(pickupResult['formatted_address'])}'
-              '&dropoff[latitude]=${destResult['lat']}'
-              '&dropoff[longitude]=${destResult['lng']}'
-              '&dropoff[formatted_address]=${Uri.encodeComponent(destResult['formatted_address'])}';
-          
-          debugPrint('[AIA] 🎯 Using specific pickup: ${pickupResult['formatted_address']}');
-        } else {
-          // Fallback to current location if pickup geocoding fails
-          deeplink = 'uber://riderequest?pickup=my_location'
-              '&dropoff[latitude]=${destResult['lat']}'
-              '&dropoff[longitude]=${destResult['lng']}'
-              '&dropoff[formatted_address]=${Uri.encodeComponent(destResult['formatted_address'])}';
-          
-          debugPrint('[AIA] ⚠️ Pickup geocoding failed, using current location');
-        }
-      }
-      
-      // Launch Uber app
-      await _launchUberDeeplink(deeplink, destResult['formatted_address']);
-      
-    } catch (e) {
-      debugPrint('[AIA] ❌ Error creating Uber ride: $e');
-    }
-  }
-
-  /// Launch Uber deeplink with fallback to web
-  Future<void> _launchUberDeeplink(String deeplink, String destination) async {
-    try {
-      final uri = Uri.parse(deeplink);
-      
-      debugPrint('[AIA] 🚀 Launching Uber deeplink: $deeplink');
-      
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        debugPrint('[AIA] ✅ Uber app opened for trip to: $destination');
-      } else {
-        // Fallback to web version
-        final webUrl = Uri.parse('https://m.uber.com/looking?pickup=my_location');
+        // Fallback para abrir a URL web do Airbnb
+        debugPrint('[AIA] Não foi possível abrir o app Airbnb, tentando abrir a versão web...');
+        final Uri webUrl = Uri.parse('https://www.airbnb.com/rooms/1358731300179127707');
         await launchUrl(webUrl, mode: LaunchMode.externalApplication);
-        debugPrint('[AIA] ⚠️ Opened Uber web version (app not available)');
       }
     } catch (e) {
-      debugPrint('[AIA] ❌ Error launching Uber: $e');
-    }
-  }
-
-  /// Send function call result back to the model
-  Future<void> _sendFunctionCallResult(String callId, String result) async {
-    try {
-      final event = {
-        "type": "conversation.item.create",
-        "item": {
-          "type": "function_call_output",
-          "call_id": callId,
-          "output": jsonEncode({"result": result})
-        }
-      };
-      
-      debugPrint('[AIA] 📤 Sending function call result for call ID: $callId');
-      debugPrint('[AIA] 📋 Result: $result');
-      
-      _dataChannel!.send(RTCDataChannelMessage(jsonEncode(event)));
-      
-      // After sending the function result, trigger a new response
-      final responseEvent = {
-        "type": "response.create"
-      };
-      
-      _dataChannel!.send(RTCDataChannelMessage(jsonEncode(responseEvent)));
-      debugPrint('[AIA] 🔄 Triggered new response after function call');
-      
-    } catch (e) {
-      debugPrint('[AIA] ❌ Error sending function call result: $e');
+      debugPrint('[AIA] Erro ao abrir Airbnb: $e');
     }
   }
 
