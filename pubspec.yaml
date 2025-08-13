@@ -67,6 +67,7 @@ dependencies:
   # OpenAI Realtime API dependencies
   flutter_webrtc: ^0.11.7  # WebRTC for real-time communication
   flutter_dotenv: ^5.1.0   # Environment variables for API keys
+  dio: ^5.4.0              # HTTP client for API requests
 
 dev_dependencies:
   flutter_test:
