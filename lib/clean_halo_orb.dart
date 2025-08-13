@@ -5,7 +5,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'ai_service.dart';
-import 'shader_orb.dart';
+import 'widgets/aia_video_player.dart';
 import 'services/openai_realtime_service.dart';
 import 'services/audio_service.dart';
 import 'dart:async';
@@ -408,7 +408,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFFEAEBEE),
       body: AnimatedBuilder(
         animation: _fadeInOpacity,
         builder: (context, child) {
@@ -430,12 +430,20 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                       
                       return Transform.scale(
                         scale: finalScale,
-                        child: ShaderOrb(
+                        child: AIAVideoPlayer(
                           size: 340,
-                          hue: _getOrbHue(),
-                          hoverIntensity: _getOrbIntensity(),
-                          rotateOnHover: false,
-                          forceHoverState: false,
+                          isListening: _currentState == OrbState.listening,
+                          isProcessing: _currentState == OrbState.processing,
+                          isSpeaking: _currentState == OrbState.speaking,
+                          onTap: () async {
+                            if (_currentState == OrbState.idle) {
+                              // Iniciar conversa com OpenAI Realtime
+                              await _startRealtimeConversation();
+                            } else if (_isRealtimeConnected) {
+                              // Se já está conectado, encerrar conversa
+                              await _stopRealtimeConversation();
+                            }
+                          },
                         ),
                       );
                     },
@@ -514,25 +522,6 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                     ),
                   ),
                 
-                
-                // Touch overlay for interaction
-                Positioned.fill(
-                  child: GestureDetector(
-                    onTap: () async {
-                      if (_currentState == OrbState.idle) {
-                        // Iniciar conversa com OpenAI Realtime
-                        await _startRealtimeConversation();
-                      } else if (_isRealtimeConnected) {
-                        // Se já está conectado, encerrar conversa
-                        await _stopRealtimeConversation();
-                      }
-                    },
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      color: Colors.transparent,
-                    ),
-                  ),
-                ),
               ],
             ),
           );

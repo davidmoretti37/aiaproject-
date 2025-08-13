@@ -409,7 +409,7 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: const Color(0xFFEAEBEE),
       body: AnimatedBuilder(
         animation: _fadeInOpacity,
         builder: (context, child) {
