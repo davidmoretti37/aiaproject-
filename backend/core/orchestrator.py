@@ -5,6 +5,7 @@ from agents.ride_sharing_agent import RideSharingAgent
 from agents.food_delivery_agent import FoodDeliveryAgent
 from agents.gmail_agent import GmailAgent
 from agents.calendar_agent import CalendarAgent
+from agents.reminder_agent import ReminderAgent
 from config.settings import get_settings
 
 # Load settings to ensure environment variables are set
@@ -18,6 +19,7 @@ class AIAOrchestrator:
         self.food_delivery_agent = FoodDeliveryAgent()
         self.gmail_agent = GmailAgent()
         self.calendar_agent = CalendarAgent()
+        self.reminder_agent = ReminderAgent()
         
         # Registry of available agents with their capabilities
         self.available_agents = {
@@ -42,7 +44,7 @@ class AIAOrchestrator:
             "CalendarAgent": {
                 "agent": self.calendar_agent,
                 "description": "Manages Google Calendar, including creating and listing events.",
-                "keywords": ["calendar", "event", "schedule", "meeting", "appointment"],
+                "keywords": ["calendar", "event", "meeting", "appointment", "calendario", "evento", "reunião", "compromisso"],
                 "capabilities": ["create event", "list events"]
             },
             "TravelAgent": {
@@ -58,7 +60,7 @@ class AIAOrchestrator:
                 "capabilities": ["FIPE pricing consultation", "RENAVAM official data lookup", "automatic debt verification", "vehicle plate validation", "Brazilian vehicle information", "IPVA and fines checking", "market value assessment", "vehicle specifications"]
             },
             "ReminderAgent": {
-                "agent": None,  # Will be integrated with AIA backend
+                "agent": self.reminder_agent,
                 "description": "Specialized agent for creating and managing reminders for important dates and events. Supports flexible time configurations and provides clear confirmation messages.",
                 "keywords": ["reminder", "lembrete", "remind", "lembrar", "alert", "alerta", "notification", "notificação", "schedule", "agendar", "time", "tempo", "date", "data"],
                 "capabilities": ["create reminders", "list active reminders", "cancel reminders", "flexible time settings (days/minutes/seconds)", "clear confirmations"]
@@ -85,11 +87,18 @@ class AIAOrchestrator:
             Available specialized agents:
             {self._format_agent_descriptions()}
             
+            IMPORTANT ROUTING RULES:
+            - ReminderAgent: Use for "lembrete", "remind", "lembrar", "notification" requests
+            - CalendarAgent: Use for "evento", "event", "meeting", "appointment", "calendar" requests
+            - When user says "lembrete" or "remind", always choose ReminderAgent
+            - When user says "evento" or "meeting", always choose CalendarAgent
+            
             Your decision process:
             1. Analyze the user's request
-            2. Identify which agent is best suited for the task
-            3. Choose the agent that matches the request intent
-            4. If no specialized agent matches, handle the request yourself
+            2. Look for specific keywords that match each agent
+            3. Prioritize exact keyword matches
+            4. Choose the agent that best matches the request intent
+            5. If no specialized agent matches, handle the request yourself
             
             Always be helpful, professional, and choose the most appropriate agent for each task.
             """,
@@ -120,29 +129,42 @@ class AIAOrchestrator:
                              google_access_token: Optional[str] = None) -> Dict[str, Any]:
         """Main flow to process user requests with optional location"""
         
-        # Step 1: Classify intent and select appropriate agent
-        agent_selection = cf.run(
-            f"""
-            Analyze the user's request and determine which agent should handle it.
-            
-            Available agents and their capabilities:
-            {self._get_agent_info_for_selection()}
-            
-            Based on the user's request, decide:
-            1. Which agent is most suitable for this task
-            2. What category this request falls into
-            3. Return the agent name that should handle this request
-            
-            If no specialized agent is suitable, return "AIA_Orchestrator" to handle it yourself.
-            """,
-            context={
-                "user_request": user_input,
-                "available_agents": list(self.available_agents.keys()),
-                "user_location": user_location
-            },
-            result_type=str,  # Returns the agent name
-            agents=[self.orchestrator]
-        )
+        # Step 1: Pre-process for exact keyword matching
+        user_input_lower = user_input.lower()
+        
+        # Check for exact keyword matches first
+        if any(keyword in user_input_lower for keyword in ["lembrete", "remind", "lembrar"]):
+            agent_selection = "ReminderAgent"
+        elif any(keyword in user_input_lower for keyword in ["evento", "event", "meeting", "reunião", "calendar", "appointment"]):
+            agent_selection = "CalendarAgent"
+        else:
+            # Use AI agent selection
+            agent_selection = cf.run(
+                f"""
+                Analyze the user's request and determine which agent should handle it.
+                
+                Available agents and their capabilities:
+                {self._get_agent_info_for_selection()}
+                
+                PRIORITY KEYWORDS:
+                - "lembrete", "remind", "lembrar" → ReminderAgent
+                - "evento", "event", "meeting", "calendar" → CalendarAgent
+                
+                Based on the user's request, decide:
+                1. Which agent is most suitable for this task
+                2. What category this request falls into
+                3. Return the agent name that should handle this request
+                
+                If no specialized agent is suitable, return "AIA_Orchestrator" to handle it yourself.
+                """,
+                context={
+                    "user_request": user_input,
+                    "available_agents": list(self.available_agents.keys()),
+                    "user_location": user_location
+                },
+                result_type=str,  # Returns the agent name
+                agents=[self.orchestrator]
+            )
         
         # Step 2: Delegate to the selected agent
         if agent_selection in self.available_agents:
@@ -151,9 +173,12 @@ class AIAOrchestrator:
             selected_agent = selected_agent_info["agent"]
             
             # Delegate to the appropriate agent and get the result
-            if agent_selection in ["GmailAgent", "CalendarAgent"]:
-                # For Google agents, call the process_message method directly
-                result = await selected_agent.process_message(user_input, google_access_token)
+            if agent_selection in ["GmailAgent", "CalendarAgent", "ReminderAgent"]:
+                # For agents with process_message method, call it directly
+                if agent_selection == "ReminderAgent":
+                    result = await selected_agent.process_message(user_input, user_id)
+                else:
+                    result = await selected_agent.process_message(user_input, google_access_token)
             else:
                 # For other agents, run a standard ControlFlow task
                 agent_task = cf.Task(

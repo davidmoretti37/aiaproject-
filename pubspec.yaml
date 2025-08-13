@@ -36,6 +36,7 @@ dependencies:
   url_launcher: ^6.3.1
   shared_preferences: ^2.2.2
   google_sign_in: ^6.1.5
+  supabase_flutter: ^2.5.6
 
   tdesign_flutter: ^0.2.2
   getwidget: ^4.0.0

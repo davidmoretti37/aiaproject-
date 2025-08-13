@@ -3,12 +3,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'ai_service.dart';
 import 'services/openai_realtime_service.dart';
-import 'services/audio_service.dart';
+import 'services/chat_service.dart';
+import 'widgets/reminder_test_widget.dart';
 import 'dart:async';
-import 'dart:typed_data';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class CleanChatInterface extends StatefulWidget {
   final VoidCallback onReturnToOrb;
@@ -49,6 +48,7 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
   bool _isSpeaking = false;
   bool _isServerConnected = false;
   bool _isMuted = false;
+  bool _showReminderTest = false;
   
   // OpenAI Realtime state
   bool _isRealtimeConnected = false;
@@ -127,10 +127,16 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
   }
 
   Future<void> _checkServerConnection() async {
-    final isConnected = await AIService.checkServerHealth();
+    final isConnected = await ChatService.testConnection();
     setState(() {
       _isServerConnected = isConnected;
     });
+    
+    if (isConnected) {
+      print('✅ Conectado ao backend AIA');
+    } else {
+      print('❌ Falha na conexão com backend AIA');
+    }
   }
 
   void _startFadeIn() {
@@ -216,31 +222,51 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
     });
 
     try {
-      final response = await AIService().sendMessage(input, sessionId: widget.sessionId);
-      final message = response['message'] ?? 'No response received';
-      final executionType = response['execution_type'] ?? 'unknown';
-      final agentUsed = response['agent_used'] ?? 'unknown';
+      // 🚀 Usar o novo ChatService que envia automaticamente o user_id
+      final response = await ChatService.sendMessage(input);
       
-      // 🎯 Adicionar informação sobre qual sistema foi usado
-      String systemInfo = '';
-      if (executionType == 'advanced_aia') {
-        systemInfo = ' 🧠 [AIA Advanced: $agentUsed]';
-      } else if (executionType == 'simple_backend') {
-        systemInfo = ' 💬 [Simple Backend]';
-      }
-      
-      // Add AI response with system info (only in debug mode)
-      final debugMode = true; // Pode ser configurado
-      final finalMessage = debugMode ? '$message$systemInfo' : message;
-      _addMessage(finalMessage, false);
-      
-      // Speak only the main message (without system info) if not muted
-      if (!_isMuted) {
-        await _flutterTts.speak(message);
+      if (response != null && response['success'] == true) {
+        final message = response['response'] ?? 'No response received';
+        final agentUsed = response['agent_used'] ?? 'unknown';
+        final intentCategory = response['intent_category'] ?? 'unknown';
+        
+        // 🎯 Mostrar informações de debug sobre qual agente foi usado
+        String systemInfo = '';
+        if (agentUsed != 'AIA_Orchestrator') {
+          systemInfo = ' 🤖 [$agentUsed]';
+        }
+        
+        // Add AI response with system info (only in debug mode)
+        final debugMode = true; // Pode ser configurado
+        final finalMessage = debugMode ? '$message$systemInfo' : message;
+        _addMessage(finalMessage, false);
+        
+        // Speak only the main message (without system info) if not muted
+        if (!_isMuted) {
+          await _flutterTts.speak(message);
+        }
+        
+        // 📝 Log para debug
+        print('✅ Resposta recebida:');
+        print('   Agente usado: $agentUsed');
+        print('   Categoria: $intentCategory');
+        print('   Mensagem: $message');
+        
+      } else {
+        final errorMsg = response?['response'] ?? "I'm having trouble connecting right now. Please try again.";
+        _addMessage(errorMsg, false);
+        print('❌ Erro na resposta: $response');
       }
       
     } catch (e) {
-      _addMessage("I'm having trouble connecting right now. Please try again.", false);
+      print('❌ Erro ao enviar mensagem: $e');
+      
+      // Verificar se é erro de autenticação
+      if (e.toString().contains('não está logado')) {
+        _addMessage("Please sign in to use AIA's features.", false);
+      } else {
+        _addMessage("I'm having trouble connecting right now. Please try again.", false);
+      }
     } finally {
       setState(() {
         _isProcessing = false;
@@ -258,8 +284,14 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
 
     try {
       // Criar serviço com callbacks
+      // Obter ID real do usuário logado
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      final userId = currentUser?.id ?? 'anonymous_user';
+      
+      debugPrint('[AIA Chat] 👤 Usuário logado: ${currentUser?.email ?? 'Anônimo'} (ID: $userId)');
+      
       _openAIService = OpenAIRealtimeService(
-        userName: "Usuário", // Pode ser personalizado
+        userName: userId, // ID real do usuário logado
         onAudioResponse: (audioData) {
           debugPrint('[AIA Chat] Recebendo áudio: ${audioData.length} bytes');
           setState(() {
@@ -389,6 +421,20 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
                   // Header
                   _buildHeader(),
                   
+                  // Reminder Test Widget (quando ativado)
+                  if (_showReminderTest)
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.orange.withOpacity(0.3),
+                        ),
+                      ),
+                      child: const ReminderTestWidget(),
+                    ),
+                  
                   // Messages
                   Expanded(
                     child: _buildMessagesList(),
@@ -432,6 +478,21 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
                 fontWeight: FontWeight.w600,
               ),
             ),
+          ),
+          
+          // Test Reminders Button
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _showReminderTest = !_showReminderTest;
+              });
+            },
+            icon: Icon(
+              Icons.alarm,
+              color: _showReminderTest ? Colors.orange : Colors.white70,
+              size: 24,
+            ),
+            tooltip: 'Test Reminders',
           ),
           
           // Mute Button

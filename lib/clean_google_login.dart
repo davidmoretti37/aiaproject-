@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'ai_service.dart';
+import 'services/integrated_auth_service.dart';
 
 class CleanGoogleLogin extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -52,15 +52,22 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
     });
 
     try {
-      final success = await AIService().signInWithGoogle();
+      final userInfo = await IntegratedAuthService.signIn();
       
-      if (success) {
-        final userEmail = AIService().getUserEmail();
-        final userName = AIService().getUserDisplayName();
+      if (userInfo != null) {
+        final userEmail = userInfo['email'];
+        final userName = userInfo['name'];
+        final userId = userInfo['supabase_user_id'];
         
         setState(() {
           _statusMessage = 'Welcome, ${userName ?? userEmail ?? 'User'}!';
         });
+        
+        print('✅ Login realizado com sucesso!');
+        print('   Nome: $userName');
+        print('   Email: $userEmail');
+        print('   Supabase ID: $userId');
+        print('   Google ID: ${userInfo['google_user_id']}');
         
         // Small delay to show success message
         await Future.delayed(const Duration(milliseconds: 1500));
@@ -88,6 +95,8 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
         _isLoading = false;
         _statusMessage = 'Error: ${e.toString()}';
       });
+      
+      print('❌ Erro no login: $e');
       
       // Clear error message after 3 seconds
       Future.delayed(const Duration(seconds: 3), () {
