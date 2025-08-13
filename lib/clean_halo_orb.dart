@@ -10,6 +10,7 @@ import 'services/openai_realtime_service.dart';
 import 'services/audio_service.dart';
 import 'dart:async';
 import 'dart:typed_data';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum OrbState {
   idle,       // Blue, calm breathing
@@ -205,8 +206,14 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
 
     try {
       // Criar serviço com callbacks
+      // Obter ID real do usuário logado
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      final userId = currentUser?.id ?? 'anonymous_user';
+      
+      debugPrint('[AIA Orb] 👤 Usuário logado: ${currentUser?.email ?? 'Anônimo'} (ID: $userId)');
+      
       _openAIService = OpenAIRealtimeService(
-        userName: "Usuário", // Pode ser personalizado
+        userName: userId, // ID real do usuário logado
         onAudioResponse: (audioData) {
           debugPrint('[AIA Orb] Recebendo áudio: ${audioData.length} bytes');
           setState(() {

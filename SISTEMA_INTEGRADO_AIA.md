@@ -7,7 +7,7 @@ O AIAPROJECT- agora está totalmente integrado com o sistema avançado de agente
 ## 🔧 Configuração Atual
 
 ### Backend AIA Avançado
-- **URL**: `https://72f856fa9288.ngrok-free.app`
+- **URL**: `https://childrens-killer-dimensional-covering.trycloudflare.com`
 - **Status**: ✅ Ativo e funcionando
 - **Agentes Disponíveis**: Gmail, Calendar, Transport, Food, etc.
 
@@ -120,7 +120,7 @@ O sistema gera logs detalhados para debug:
 ## 🔧 Troubleshooting
 
 ### Backend AIA não responde
-- Verificar se ngrok está ativo: `https://72f856fa9288.ngrok-free.app/health`
+- Verificar se Cloudflare está ativo: `https://childrens-killer-dimensional-covering.trycloudflare.com/health`
 - Logs mostrarão: "⚠️ AIA Backend not available, falling back to simple backend"
 
 ### Reconhecimento de voz não funciona

@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'clean_app_flow.dart';
+import 'services/integrated_auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Carregar variáveis de ambiente
   await dotenv.load(fileName: ".env");
+  
+  // Inicializar serviço de autenticação integrado
+  await IntegratedAuthService.initialize();
   
   runApp(MyApp());
 }

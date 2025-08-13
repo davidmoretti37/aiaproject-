@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class AIAApiService {
-  // URL do backend AIA (atualizada para o novo ngrok)
-  static const String _baseUrl = 'https://72f856fa9288.ngrok-free.app';
+  // URL do backend AIA (atualizada para o novo Cloudflare Tunnel)
+  static const String _baseUrl = 'https://childrens-killer-dimensional-covering.trycloudflare.com';
   
   // Session management para Conversation Buffer
   static String? _currentSessionId;
