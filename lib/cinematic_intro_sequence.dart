@@ -1342,11 +1342,13 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
 
   // Helper methods for fixed orb appearance
   double _getCurrentHue() {
-    return 240.0; // Fixed blue hue - no color transitions
+    // Use 0 for black (no color), or a very dark gray if needed
+    return 0.0;
   }
 
   double _getCurrentIntensity() {
-    return 0.3; // Fixed calm intensity - no intensity changes
+    // Lower intensity for subtle effect
+    return 0.12;
   }
 
   // Smooth state transition method
@@ -2359,18 +2361,18 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
                     width: double.infinity,
                     height: double.infinity,
                     decoration: BoxDecoration(
-                      gradient: RadialGradient(
-                        center: Alignment.center,
-                        radius: _grayRadius.value,
-                        colors: [
-                          // Gradually transition from gray to black
-                          Color.lerp(Colors.grey, Colors.black, 1.0 - _grayFadeOut.value)!.withOpacity(0.7 * _grayFadeOut.value),
-                          Color.lerp(Colors.grey, Colors.black, 1.0 - _grayFadeOut.value)!.withOpacity(0.4 * _grayFadeOut.value),
-                          Color.lerp(Colors.grey, Colors.black, 1.0 - _grayFadeOut.value)!.withOpacity(0.1 * _grayFadeOut.value),
-                          Colors.transparent,
-                        ],
-                        stops: const [0.0, 0.3, 0.6, 1.0],
-                      ),
+gradient: RadialGradient(
+  center: Alignment.center,
+  radius: _grayRadius.value,
+  colors: [
+    // Make the intro even lighter: use pure white and reduce opacity
+    Color.lerp(Colors.white, Colors.black, 1.0 - _grayFadeOut.value)!.withOpacity(0.25 * _grayFadeOut.value),
+    Color.lerp(Colors.white, Colors.black, 1.0 - _grayFadeOut.value)!.withOpacity(0.10 * _grayFadeOut.value),
+    Color.lerp(Colors.white, Colors.black, 1.0 - _grayFadeOut.value)!.withOpacity(0.02 * _grayFadeOut.value),
+    Colors.transparent,
+  ],
+  stops: const [0.0, 0.3, 0.6, 1.0],
+),
                     ),
                   );
                 },
@@ -2380,14 +2382,14 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
               AnimatedBuilder(
                 animation: _grayToBlackController,
                 builder: (context, child) {
-                  // Gradually increase black overlay opacity throughout the transition
-                  double blackOpacity = (1.0 - _grayFadeOut.value) * 0.8; // Max 80% opacity for smooth blend
-                  
-                  return Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    color: Color(0xFF000000).withOpacity(blackOpacity),
-                  );
+  // Gradually increase black overlay opacity throughout the transition
+  double blackOpacity = (1.0 - _grayFadeOut.value) * 0.15; // Max 15% opacity for much lighter blend
+
+  return Container(
+    width: double.infinity,
+    height: double.infinity,
+    color: Color(0xFF000000).withOpacity(blackOpacity),
+  );
                 },
               ),
               
