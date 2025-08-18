@@ -66,7 +66,7 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
         print('✅ Login realizado com sucesso!');
         print('   Nome: $userName');
         print('   Email: $userEmail');
-        print('   Supabase ID: $userId');
+        print('   Supabase ID: ${userInfo['supabase_id'] ?? userId}');
         print('   Google ID: ${userInfo['google_user_id']}');
         
         // Small delay to show success message

@@ -1,5 +1,6 @@
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class SimpleAuthService {
   static const String _clientId = '1059033516426-hbk4lgpue8qocsha8a36suo1jlgk2lt6.apps.googleusercontent.com';
@@ -31,10 +32,10 @@ class SimpleAuthService {
     }
   }
 
-  /// Login simples apenas com Google
+  /// Login com Google via Supabase OAuth
   static Future<Map<String, dynamic>?> signIn() async {
     try {
-      print('🔑 Iniciando autenticação Google simplificada...');
+      print('🔑 Iniciando autenticação Google via Supabase...');
       
       // 1. Faz login com Google
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -52,20 +53,55 @@ class SimpleAuthService {
 
       print('🔑 Tokens obtidos com sucesso');
 
-      // 3. Cria informações do usuário (sem Supabase)
-      final userInfo = {
-        'user_id': googleUser.id, // ID principal
-        'google_user_id': googleUser.id,
-        'email': googleUser.email,
-        'name': googleUser.displayName ?? '',
-        'access_token': _accessToken,
-        'auth_provider': 'google_only',
-      };
+      // 3. Autentica no Supabase com o token do Google
+      try {
+        final AuthResponse supabaseResponse = await Supabase.instance.client.auth.signInWithIdToken(
+          provider: OAuthProvider.google,
+          idToken: googleAuth.idToken!,
+          accessToken: googleAuth.accessToken!,
+        );
 
-      await _saveUserInfo(userInfo);
-      print('✅ Login simplificado realizado com sucesso!');
-      
-      return userInfo;
+        final supabaseUser = supabaseResponse.user;
+        if (supabaseUser != null) {
+          print('✅ Login Supabase realizado: ${supabaseUser.id}');
+          
+          // 4. Cria informações do usuário com UUID real do Supabase
+          final userInfo = {
+            'user_id': supabaseUser.id, // UUID real do Supabase
+            'supabase_id': supabaseUser.id,
+            'google_user_id': googleUser.id,
+            'email': supabaseUser.email ?? googleUser.email,
+            'name': supabaseUser.userMetadata?['full_name'] ?? googleUser.displayName ?? '',
+            'access_token': _accessToken,
+            'auth_provider': 'supabase_google',
+          };
+
+          await _saveUserInfo(userInfo);
+          print('✅ Login completo realizado com sucesso!');
+          print('   UUID Supabase: ${supabaseUser.id}');
+          print('   Google ID: ${googleUser.id}');
+          
+          return userInfo;
+        } else {
+          print('❌ Falha na autenticação Supabase');
+        }
+      } catch (supabaseError) {
+        print('❌ Erro no login Supabase: $supabaseError');
+        
+        // Fallback: usar apenas o Google (como antes)
+        print('⚠️ Usando fallback: Google apenas');
+        final userInfo = {
+          'user_id': googleUser.id, // Fallback para Google ID
+          'google_user_id': googleUser.id,
+          'email': googleUser.email,
+          'name': googleUser.displayName ?? '',
+          'access_token': _accessToken,
+          'auth_provider': 'google_only',
+        };
+
+        await _saveUserInfo(userInfo);
+        return userInfo;
+      }
       
     } catch (error) {
       print('❌ Erro na autenticação Google: $error');
@@ -123,6 +159,7 @@ class SimpleAuthService {
   static Future<void> _saveUserInfo(Map<String, dynamic> userInfo) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('user_id', userInfo['user_id']);
+    await prefs.setString('supabase_id', userInfo['supabase_id'] ?? userInfo['user_id']);
     await prefs.setString('google_user_id', userInfo['google_user_id']);
     await prefs.setString('user_email', userInfo['email']);
     await prefs.setString('user_name', userInfo['name']);
@@ -134,6 +171,7 @@ class SimpleAuthService {
   static Future<void> _clearUserInfo() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('user_id');
+    await prefs.remove('supabase_id');
     await prefs.remove('google_user_id');
     await prefs.remove('user_email');
     await prefs.remove('user_name');
@@ -146,6 +184,7 @@ class SimpleAuthService {
     final prefs = await SharedPreferences.getInstance();
     return {
       'user_id': prefs.getString('user_id'),
+      'supabase_id': prefs.getString('supabase_id'),
       'google_user_id': prefs.getString('google_user_id'),
       'email': prefs.getString('user_email'),
       'name': prefs.getString('user_name'),

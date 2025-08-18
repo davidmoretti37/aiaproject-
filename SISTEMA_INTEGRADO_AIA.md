@@ -7,12 +7,12 @@ O AIAPROJECT- agora está totalmente integrado com o sistema avançado de agente
 ## 🔧 Configuração Atual
 
 ### Backend AIA Avançado
-- **URL**: `https://seattle-expert-mounting-walnut.trycloudflare.com`
+- **URL**: `https://cart-clara-cadillac-violation.trycloudflare.com`
 - **Status**: ✅ Ativo e funcionando
 - **Agentes Disponíveis**: Gmail, Calendar, Transport, Food, etc.
 
 ### Backend Simples (Fallback)
-- **URL**: `http://192.168.3.54:8000`
+- **URL**: `https://cart-clara-cadillac-violation.trycloudflare.com`
 - **Status**: ⚠️ Opcional (usado apenas como fallback)
 
 ## 🧠 Lógica de Funcionamento
@@ -120,7 +120,7 @@ O sistema gera logs detalhados para debug:
 ## 🔧 Troubleshooting
 
 ### Backend AIA não responde
-- Verificar se Cloudflare está ativo: `https://seattle-expert-mounting-walnut.trycloudflare.com/health`
+- Verificar se Cloudflare está ativo: `https://cart-clara-cadillac-violation.trycloudflare.com/health`
 - Logs mostrarão: "⚠️ AIA Backend not available, falling back to simple backend"
 
 ### Reconhecimento de voz não funciona
