@@ -5,7 +5,7 @@ import 'services/aia_api_service.dart';
 
 class AIService {
   // Backend simples local (fallback apenas)
-  static const String baseUrl = 'http://192.168.3.54:8000';
+  static const String baseUrl = String.fromEnvironment('BACKEND_URL', defaultValue: 'https://childrens-killer-dimensional-covering.trycloudflare.com');
 
   
   // Initialize Google Auth Service

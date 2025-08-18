@@ -453,33 +453,71 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
               children: [
                 // Main Orb (clean, no debugging visuals)
                 Center(
-                  child: AnimatedBuilder(
-                    animation: Listenable.merge([_breathingController, _stateController]),
-                    builder: (context, child) {
-                      double finalScale = _breathingScale.value;
-                      if (_currentState == OrbState.listening) {
-                        finalScale *= (1.0 + (_currentSoundLevel * 0.3));
-                      }
-                      return GestureDetector(
-                        onTap: () async {
-                          if (_currentState == OrbState.idle) {
-                            await _startRealtimeConversation();
-                          } else if (_isRealtimeConnected) {
-                            await _stopRealtimeConversation();
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      AnimatedBuilder(
+                        animation: Listenable.merge([_breathingController, _stateController]),
+                        builder: (context, child) {
+                          double finalScale = _breathingScale.value;
+                          if (_currentState == OrbState.listening) {
+                            finalScale *= (1.0 + (_currentSoundLevel * 0.3));
                           }
+                          return GestureDetector(
+                            onTap: () async {
+                              if (_currentState == OrbState.idle) {
+                                await _startRealtimeConversation();
+                              } else if (_isRealtimeConnected) {
+                                await _stopRealtimeConversation();
+                              }
+                            },
+                            behavior: HitTestBehavior.translucent,
+                            child: Transform.scale(
+                              scale: finalScale,
+                              child: AIAVideoPlayer(
+                                size: 340,
+                                isListening: _currentState == OrbState.listening,
+                                isProcessing: _currentState == OrbState.processing,
+                                isSpeaking: _currentState == OrbState.speaking,
+                              ),
+                            ),
+                          );
                         },
-                        behavior: HitTestBehavior.translucent,
-                        child: Transform.scale(
-                          scale: finalScale,
-                          child: AIAVideoPlayer(
-                            size: 340,
-                            isListening: _currentState == OrbState.listening,
-                            isProcessing: _currentState == OrbState.processing,
-                            isSpeaking: _currentState == OrbState.speaking,
+                      ),
+                      if (_currentState == OrbState.idle)
+                        Positioned(
+                          bottom: 24,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.92),
+                              borderRadius: BorderRadius.circular(32),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 12,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.mic, color: Colors.blue, size: 22),
+                                SizedBox(width: 10),
+                                Text(
+                                  "Tap to Speak",
+                                  style: GoogleFonts.inter(
+                                    color: Colors.blue[900],
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      );
-                    },
+                    ],
                   ),
                 ),
                 
