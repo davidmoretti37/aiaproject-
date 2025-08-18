@@ -45,9 +45,9 @@ class _AIAAnimationState extends State<AIAAnimation>
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFFE8F4FD),
-            Color(0xFFF0F8FF),
-            Color(0xFFE6F3FF),
+            Color(0xFF000000),
+            Color(0xFF222222),
+            Color(0xFF444444),
           ],
         ),
       ),
@@ -67,7 +67,7 @@ class AIAPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Color(0xFF2C3E50)
+      ..color = Color(0xFF000000)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12.0
       ..strokeCap = StrokeCap.round

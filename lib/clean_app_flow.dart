@@ -274,13 +274,12 @@ class _CleanAppFlowState extends State<CleanAppFlow>
                       ),
                       radius: 1.2,
                       colors: [
+                        Color(0xFFFFFFFF), // Pure White
                         Color(0xFFF9FAFB), // Light Gray
                         Color(0xFFF5F5F5), // Cool Light Gray
                         Color(0xFFF3F4F6), // Medium Gray
                         Color(0xFFE5E7EB), // Cool Medium Gray
-                        Color(0xFFD1D5DB), // Slightly Darker Gray
-                        Color(0xFFB0B4BA), // Medium-Dark Gray
-                        Color(0xFF9CA3AF), // Warm Gray
+                        Color(0xFFF9FAFB), // Light Gray (repeat for smoothness)
                         Color(0xFFFFFFFF), // Pure White
                       ],
                       stops: [
@@ -290,7 +289,6 @@ class _CleanAppFlowState extends State<CleanAppFlow>
                         0.5 + (_lottieController.value * 0.2),
                         0.7 + (_lottieController.value * 0.2),
                         0.85 + (_lottieController.value * 0.2),
-                        0.95 + (_lottieController.value * 0.2),
                         1.0,
                       ],
                     ),
@@ -313,12 +311,12 @@ class _CleanAppFlowState extends State<CleanAppFlow>
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            Color(0xFF00b8a3), // Deep Teal/Cyan
-                            Color(0xFF2563eb), // Rich Blue
-                            Color(0xFF7c3aed), // Vibrant Purple
-                            Color(0xFFdb2777), // Deep Magenta
-                            Color(0xFF0891b2), // Ocean Blue
-                            Color(0xFF9333ea), // Royal Purple
+                            Color(0xFF000000), // Black
+                            Color(0xFF222222), // Dark Gray
+                            Color(0xFF444444), // Medium Gray
+                            Color(0xFF666666), // Lighter Gray
+                            Color(0xFF888888), // Even Lighter Gray
+                            Color(0xFFCCCCCC), // Near White
                           ],
                           stops: [
                             0.0 + (_lottieController.value * 0.3),
@@ -343,7 +341,7 @@ class _CleanAppFlowState extends State<CleanAppFlow>
                             // You can adjust the color to your desired neon/AI-inspired color.
                             ValueDelegate.color(
                               const ['**'],
-                              value: Color(0xFF39FF14), // Neon green
+                              value: Color(0xFF222222), // Dark Gray
                             ),
                           ],
                         ),

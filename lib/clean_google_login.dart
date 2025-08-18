@@ -131,13 +131,26 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+        gradient: RadialGradient(
+          center: Alignment(-0.3, -0.3),
+          radius: 1.2,
           colors: [
-            Color(0xFF000000),
-            Color(0xFF111111),
-            Color(0xFF000000),
+            Color(0xFFFFFFFF), // Pure White
+            Color(0xFFF9FAFB), // Light Gray
+            Color(0xFFF5F5F5), // Cool Light Gray
+            Color(0xFFF3F4F6), // Medium Gray
+            Color(0xFFE5E7EB), // Cool Medium Gray
+            Color(0xFFF9FAFB), // Light Gray (repeat for smoothness)
+            Color(0xFFFFFFFF), // Pure White
+          ],
+          stops: [
+            0.0,
+            0.15,
+            0.3,
+            0.5,
+            0.7,
+            0.85,
+            1.0,
           ],
         ),
       ),
@@ -154,7 +167,7 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                   Text(
                     'AIA',
                     style: GoogleFonts.inter(
-                      color: Colors.white,
+                      color: Colors.black,
                       fontSize: 56,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 6,
@@ -166,7 +179,7 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                   Text(
                     'Artificial Intelligence Assistant',
                     style: GoogleFonts.inter(
-                      color: Colors.white70,
+                      color: Colors.black54,
                       fontSize: 18,
                       fontWeight: FontWeight.w400,
                       letterSpacing: 1.5,
@@ -175,21 +188,7 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                   
                   const SizedBox(height: 80),
                   
-                  // Welcome Message
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40),
-                    child: Text(
-                      'Connect your Google account to access Gmail and Calendar features',
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w500,
-                        height: 1.4,
-                      ),
-                    ),
-                  ),
-                  
+                  // (Removed welcome message and extra spacing)
                   const SizedBox(height: 60),
                   
                   // Google Sign-In Button
@@ -230,6 +229,7 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                               Text(
                                 'Connect with Google',
                                 style: GoogleFonts.inter(
+                                  color: Colors.black,
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -251,7 +251,7 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                         Text(
                           _statusMessage,
                           style: GoogleFonts.inter(
-                            color: Colors.white70,
+                            color: Colors.black54,
                             fontSize: 16,
                           ),
                         ),
@@ -267,7 +267,7 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                       child: Text(
                         'Skip for now',
                         style: GoogleFonts.inter(
-                          color: Colors.white60,
+                          color: Colors.black38,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
@@ -284,7 +284,7 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                         style: GoogleFonts.inter(
                           color: _statusMessage.contains('Error') || _statusMessage.contains('failed')
                               ? Colors.red
-                              : Colors.green,
+                              : Colors.black,
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),
@@ -300,7 +300,7 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                       'Your information is secure and used only for sending emails and managing calendar events.',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.inter(
-                        color: Colors.white.withOpacity(0.4),
+                        color: Colors.black26,
                         fontSize: 13,
                         height: 1.4,
                       ),
