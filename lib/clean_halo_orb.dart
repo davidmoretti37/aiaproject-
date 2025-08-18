@@ -457,28 +457,26 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                     animation: Listenable.merge([_breathingController, _stateController]),
                     builder: (context, child) {
                       double finalScale = _breathingScale.value;
-                      
-                      // Add sound level reactivity when listening
                       if (_currentState == OrbState.listening) {
                         finalScale *= (1.0 + (_currentSoundLevel * 0.3));
                       }
-                      
-                      return Transform.scale(
-                        scale: finalScale,
-                        child: AIAVideoPlayer(
-                          size: 340,
-                          isListening: _currentState == OrbState.listening,
-                          isProcessing: _currentState == OrbState.processing,
-                          isSpeaking: _currentState == OrbState.speaking,
-                          onTap: () async {
-                            if (_currentState == OrbState.idle) {
-                              // Iniciar conversa com OpenAI Realtime
-                              await _startRealtimeConversation();
-                            } else if (_isRealtimeConnected) {
-                              // Se já está conectado, encerrar conversa
-                              await _stopRealtimeConversation();
-                            }
-                          },
+                      return GestureDetector(
+                        onTap: () async {
+                          if (_currentState == OrbState.idle) {
+                            await _startRealtimeConversation();
+                          } else if (_isRealtimeConnected) {
+                            await _stopRealtimeConversation();
+                          }
+                        },
+                        behavior: HitTestBehavior.translucent,
+                        child: Transform.scale(
+                          scale: finalScale,
+                          child: AIAVideoPlayer(
+                            size: 340,
+                            isListening: _currentState == OrbState.listening,
+                            isProcessing: _currentState == OrbState.processing,
+                            isSpeaking: _currentState == OrbState.speaking,
+                          ),
                         ),
                       );
                     },
