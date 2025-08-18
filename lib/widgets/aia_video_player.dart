@@ -108,16 +108,19 @@ class _AIAVideoPlayerState extends State<AIAVideoPlayer>
       return _buildLoadingState();
     }
 
-    return ClipOval(
-      child: Container(
-        width: widget.size,
-        height: widget.size,
-        child: FittedBox(
-          fit: BoxFit.cover,
-          child: SizedBox(
-            width: _controller!.value.size.width,
-            height: _controller!.value.size.height,
-            child: VideoPlayer(_controller!),
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: ClipOval(
+        child: Container(
+          width: widget.size,
+          height: widget.size,
+          child: FittedBox(
+            fit: BoxFit.cover,
+            child: SizedBox(
+              width: _controller!.value.size.width,
+              height: _controller!.value.size.height,
+              child: VideoPlayer(_controller!),
+            ),
           ),
         ),
       ),
