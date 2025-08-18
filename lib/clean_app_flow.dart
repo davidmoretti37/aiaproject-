@@ -169,6 +169,13 @@ class _CleanAppFlowState extends State<CleanAppFlow>
     setState(() {
       _currentState = AppFlowState.haloOrb;
     });
+    // Automatically start the orb animation/video as soon as the orb screen is shown
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // If CleanHaloOrb exposes a static or singleton controller, trigger it here.
+      // If not, you may need to pass a callback or use a state management solution.
+      // Example (pseudo-code):
+      // CleanHaloOrbController.of(context)?.startOrb();
+    });
   }
 
   void _onOrbInteractionComplete() {
@@ -248,78 +255,104 @@ class _CleanAppFlowState extends State<CleanAppFlow>
 
   Widget _buildAIAAnimationBackground() {
     return AnimatedBuilder(
-      animation: Listenable.merge([_zoomController]),
+      animation: Listenable.merge([_zoomController, _lottieController]),
       builder: (context, child) {
         return Stack(
           children: [
-            // Background transition
-            Container(
-              width: double.infinity,
-              height: double.infinity,
-              color: Color.lerp(
-                Colors.transparent,
-                const Color(0xFF000000),
-                _backgroundTransition.value,
-              ),
-            ),
-            
-            // Forest background with zoom
-            Transform.scale(
-              scale: _zoomScale.value,
-              child: Opacity(
-                opacity: _forestOpacity.value,
-                child: Container(
+            // Animated white/grey radial gradient background
+            AnimatedBuilder(
+              animation: _lottieController,
+              builder: (context, child) {
+                return Container(
                   width: double.infinity,
                   height: double.infinity,
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage('assets/Upward Through the Forest Canopy.png'),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withOpacity(0.3),
-                          Colors.black.withOpacity(0.6),
-                        ],
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      center: Alignment(
+                        0.0 + (_lottieController.value * 0.6) - 0.3, // animate center horizontally
+                        0.0 + (_lottieController.value * 0.6) - 0.3, // animate center vertically
                       ),
+                      radius: 1.2,
+                      colors: [
+                        Color(0xFFF9FAFB), // Light Gray
+                        Color(0xFFF5F5F5), // Cool Light Gray
+                        Color(0xFFF3F4F6), // Medium Gray
+                        Color(0xFFE5E7EB), // Cool Medium Gray
+                        Color(0xFFD1D5DB), // Slightly Darker Gray
+                        Color(0xFFB0B4BA), // Medium-Dark Gray
+                        Color(0xFF9CA3AF), // Warm Gray
+                        Color(0xFFFFFFFF), // Pure White
+                      ],
+                      stops: [
+                        0.0,
+                        0.15 + (_lottieController.value * 0.2),
+                        0.3 + (_lottieController.value * 0.2),
+                        0.5 + (_lottieController.value * 0.2),
+                        0.7 + (_lottieController.value * 0.2),
+                        0.85 + (_lottieController.value * 0.2),
+                        0.95 + (_lottieController.value * 0.2),
+                        1.0,
+                      ],
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
             
-            // Fog effect
-            if (_startFogEffect)
-              Transform.scale(
-                scale: _zoomScale.value,
-                child: BreathFogEffect(
-                  child: Container(),
-                ),
-              ),
             
-            // Lottie animation
+            // Lottie animation with colorful gradient effect
             if (!_startZoom)
               Positioned.fill(
                 child: Transform.scale(
                   scale: 2.0,
                   child: Container(
                     padding: const EdgeInsets.all(0),
-                    child: Lottie.asset(
-                      'assets/aia_text_animation.json',
-                      controller: _lottieController,
-                      width: MediaQuery.of(context).size.width,
-                      height: MediaQuery.of(context).size.height,
-                      fit: BoxFit.contain,
-                      onLoaded: (composition) {
-                        if (!_lottieController.isAnimating) {
-                          _lottieController.forward();
-                        }
+                    child: ShaderMask(
+                      shaderCallback: (Rect bounds) {
+                        return LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            Color(0xFF00b8a3), // Deep Teal/Cyan
+                            Color(0xFF2563eb), // Rich Blue
+                            Color(0xFF7c3aed), // Vibrant Purple
+                            Color(0xFFdb2777), // Deep Magenta
+                            Color(0xFF0891b2), // Ocean Blue
+                            Color(0xFF9333ea), // Royal Purple
+                          ],
+                          stops: [
+                            0.0 + (_lottieController.value * 0.3),
+                            0.2 + (_lottieController.value * 0.3),
+                            0.4 + (_lottieController.value * 0.3),
+                            0.6 + (_lottieController.value * 0.3),
+                            0.8 + (_lottieController.value * 0.3),
+                            1.0,
+                          ],
+                        ).createShader(bounds);
                       },
+                      blendMode: BlendMode.srcATop,
+                      child: Lottie.asset(
+                        'assets/aia_text_animation.json',
+                        controller: _lottieController,
+                        width: MediaQuery.of(context).size.width,
+                        height: MediaQuery.of(context).size.height,
+                        fit: BoxFit.contain,
+                        delegates: LottieDelegates(
+                          values: [
+                            // This will override all fill colors in the Lottie with a neon gradient color.
+                            // You can adjust the color to your desired neon/AI-inspired color.
+                            ValueDelegate.color(
+                              const ['**'],
+                              value: Color(0xFF39FF14), // Neon green
+                            ),
+                          ],
+                        ),
+                        onLoaded: (composition) {
+                          if (!_lottieController.isAnimating) {
+                            _lottieController.forward();
+                          }
+                        },
+                      ),
                     ),
                   ),
                 ),

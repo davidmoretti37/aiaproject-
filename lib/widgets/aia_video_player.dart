@@ -98,15 +98,19 @@ class _AIAVideoPlayerState extends State<AIAVideoPlayer>
     try {
       _controller = VideoPlayerController.asset('assets/aia_video.mp4');
       await _controller!.initialize();
+
+      // Seek to 3 seconds to skip black frame
+      await _controller!.seekTo(const Duration(seconds: 3));
       
       if (mounted) {
         setState(() {
           _isInitialized = true;
         });
         
-        // Loop the video but start paused
+        // Loop the video and start playing immediately
         _controller!.setLooping(true);
-        // Video starts paused - will play when user interacts
+        _controller!.play();
+        _isVideoPlaying = true;
       }
     } catch (e) {
       print('❌ Erro ao inicializar vídeo: $e');
@@ -152,92 +156,18 @@ class _AIAVideoPlayerState extends State<AIAVideoPlayer>
       return _buildLoadingState();
     }
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      child: AnimatedBuilder(
-        animation: Listenable.merge([_pulseAnimation, _glowAnimation]),
-        builder: (context, child) {
-          return Container(
-            width: widget.size,
-            height: widget.size,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                // Glow effect background
-                Container(
-                  width: widget.size * _pulseAnimation.value,
-                  height: widget.size * _pulseAnimation.value,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: _getStateColor().withOpacity(_glowAnimation.value * _getStateIntensity()),
-                        blurRadius: 40,
-                        spreadRadius: 10,
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Video player
-                ClipOval(
-                  child: Container(
-                    width: widget.size * 0.8,
-                    height: widget.size * 0.8,
-                    child: Stack(
-                      children: [
-                        // Video
-                        Positioned.fill(
-                          child: FittedBox(
-                            fit: BoxFit.cover,
-                            child: SizedBox(
-                              width: _controller!.value.size.width,
-                              height: _controller!.value.size.height,
-                              child: VideoPlayer(_controller!),
-                            ),
-                          ),
-                        ),
-                        
-                        // State overlay
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: _getStateColor().withOpacity(0.6),
-                                width: 3,
-                              ),
-                              gradient: RadialGradient(
-                                colors: [
-                                  Colors.transparent,
-                                  _getStateColor().withOpacity(0.1),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                
-                // Touch indicator
-                if (widget.onTap != null)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          );
-        },
+    return ClipOval(
+      child: Container(
+        width: widget.size,
+        height: widget.size,
+        child: FittedBox(
+          fit: BoxFit.cover,
+          child: SizedBox(
+            width: _controller!.value.size.width,
+            height: _controller!.value.size.height,
+            child: VideoPlayer(_controller!),
+          ),
+        ),
       ),
     );
   }

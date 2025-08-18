@@ -496,7 +496,11 @@ class _CinematicIntroSequenceState extends State<CinematicIntroSequence>
         setState(() {
           _showOrb = true;
         });
-        
+
+        // Always start orb animation controllers when orb is shown
+        _masterBreathingController.repeat(reverse: true);
+        _particleController.repeat();
+
         // Start orb reveal and scale animations
         _orbRevealController.forward();
         
