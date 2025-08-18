@@ -11,6 +11,7 @@ import 'services/audio_service.dart';
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'profile_screen.dart';
 
 enum OrbState {
   idle,       // Blue, calm breathing
@@ -416,6 +417,27 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
             opacity: _fadeInOpacity.value,
             child: Stack(
               children: [
+                // Profile Button (top-left)
+                Positioned(
+                  top: 40,
+                  left: 20,
+                  child: SafeArea(
+                    child: IconButton(
+                      tooltip: 'Dados do Usuário',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.person,
+                        color: Colors.black87,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
                 // Main Orb (clean, no debugging visuals)
                 Center(
                   child: AnimatedBuilder(

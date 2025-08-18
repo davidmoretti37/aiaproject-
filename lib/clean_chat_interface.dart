@@ -8,6 +8,7 @@ import 'services/chat_service.dart';
 import 'widgets/reminder_test_widget.dart';
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'profile_screen.dart';
 
 class CleanChatInterface extends StatefulWidget {
   final VoidCallback onReturnToOrb;
@@ -456,31 +457,49 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
       padding: const EdgeInsets.all(20),
       child: Row(
         children: [
-          // Back to Orb Button
+          // Profile Button no canto superior esquerdo (visível em fundo claro)
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
+            },
+            icon: const Icon(
+              Icons.person,
+              color: Colors.black87,
+              size: 24,
+            ),
+            tooltip: 'Dados do Usuário',
+          ),
+
+          const SizedBox(width: 8),
+
+          // Botão de voltar
           IconButton(
             onPressed: widget.onReturnToOrb,
             icon: const Icon(
               Icons.arrow_back,
-              color: Colors.white,
+              color: Colors.black87,
               size: 24,
             ),
           ),
-          
+
           const SizedBox(width: 12),
-          
-          // Title
+
+          // Título visível (cor escura)
           Expanded(
             child: Text(
               'AIA Chat',
               style: GoogleFonts.inter(
-                color: Colors.white,
+                color: Colors.black87,
                 fontSize: 24,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
-          
-          // Test Reminders Button
+
+          // Botão de Teste de Lembretes
           IconButton(
             onPressed: () {
               setState(() {
@@ -489,25 +508,25 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
             },
             icon: Icon(
               Icons.alarm,
-              color: _showReminderTest ? Colors.orange : Colors.white70,
+              color: _showReminderTest ? Colors.orange : Colors.black54,
               size: 24,
             ),
             tooltip: 'Test Reminders',
           ),
-          
-          // Mute Button
+
+          // Botão de Mudo/Áudio
           IconButton(
             onPressed: _toggleMute,
             icon: Icon(
               _isMuted ? Icons.volume_off : Icons.volume_up,
-              color: _isMuted ? Colors.red : Colors.white,
+              color: _isMuted ? Colors.red : Colors.black87,
               size: 24,
             ),
           ),
-          
+
           const SizedBox(width: 12),
-          
-          // Connection Status
+
+          // Status de conexão
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [

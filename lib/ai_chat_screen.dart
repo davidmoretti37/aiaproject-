@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:aia_project/profile_screen.dart';
 import 'dart:math' as Math;
 
 class AIChatScreen extends StatefulWidget {
@@ -202,12 +203,14 @@ class _AIChatScreenState extends State<AIChatScreen> with TickerProviderStateMix
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.only(left: 24),
-                    child: Text(
-                      "11:47",
-                      style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w500),
-                    ),
+                  IconButton(
+                    icon: const Icon(Icons.person, color: Colors.white70),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                      );
+                    },
                   ),
                   // Placeholder for avatar/status bar
                   Container(
