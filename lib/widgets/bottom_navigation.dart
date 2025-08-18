@@ -67,22 +67,17 @@ class _AIABottomNavigationState extends State<AIABottomNavigation> {
       clipBehavior: Clip.none,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.85),
-        borderRadius: BorderRadius.circular(25),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(50),
         border: Border.all(
-          color: Colors.white.withOpacity(0.1),
-          width: 1,
+          color: Colors.grey.withOpacity(0.12),
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.1),
-            blurRadius: 30,
-            offset: const Offset(0, 0),
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -118,47 +113,47 @@ class _AIABottomNavigationState extends State<AIABottomNavigation> {
                     widget.onTap(i);
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16, 
-                      vertical: 12
-                    ),
+                    width: 48,
+                    height: 48,
                     decoration: BoxDecoration(
-                      color: isActive 
-                          ? Colors.blue.withOpacity(0.2) 
-                          : Colors.transparent,
-                      borderRadius: BorderRadius.circular(20),
-                      border: isActive 
-                          ? Border.all(
-                              color: Colors.blue.withOpacity(0.4),
-                              width: 1.5,
+                      shape: BoxShape.circle,
+                      gradient: isActive
+                          ? LinearGradient(
+                              colors: [
+                                Color(0xFF4F8CFF),
+                                Color(0xFF8F5AFF),
+                                Color(0xFF6EE7B7),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             )
                           : null,
-                      boxShadow: isActive ? [
-                        BoxShadow(
-                          color: Colors.blue.withOpacity(0.3),
-                          blurRadius: 15,
-                          offset: const Offset(0, 5),
-                        ),
-                      ] : null,
+                      color: isActive
+                          ? null
+                          : Colors.transparent,
+                      border: isActive
+                          ? null
+                          : Border.all(
+                              color: Colors.grey.withOpacity(0.18),
+                              width: 1.2,
+                            ),
                     ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
+                    child: Center(
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                        child: Icon(
                           isActive ? activeIcons[i] : icons[i],
-                          color: isActive ? Colors.blue : Colors.white70,
+                          color: isActive
+                              ? Color(0xFF6F42C1)
+                              : Colors.grey[700],
                           size: isActive ? 26 : 22,
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          labels[i],
-                          style: GoogleFonts.inter(
-                            color: isActive ? Colors.blue : Colors.white70,
-                            fontSize: isActive ? 11 : 10,
-                            fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ),
                 ),

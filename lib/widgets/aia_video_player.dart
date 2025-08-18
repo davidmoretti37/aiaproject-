@@ -40,7 +40,7 @@ class _AIAVideoPlayerState extends State<AIAVideoPlayer> {
       setState(() {
         _isInitialized = true;
       });
-      await _controller.setPlaybackSpeed(0.5);
+      await _controller.setPlaybackSpeed(0.8);
       _controller.play();
 
       _controller.addListener(_loopListener);
