@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'services/integrated_auth_service.dart';
+import 'services/simple_auth_service.dart';
 
 class CleanGoogleLogin extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -52,12 +52,12 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
     });
 
     try {
-      final userInfo = await IntegratedAuthService.signIn();
+      final userInfo = await SimpleAuthService.signIn();
       
       if (userInfo != null) {
         final userEmail = userInfo['email'];
         final userName = userInfo['name'];
-        final userId = userInfo['supabase_user_id'];
+        final userId = userInfo['user_id'];
         
         setState(() {
           _statusMessage = 'Welcome, ${userName ?? userEmail ?? 'User'}!';

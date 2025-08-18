@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 
 class AIAApiService {
   // URL do backend AIA (atualizada para o novo Cloudflare Tunnel)
-  static const String _baseUrl = 'https://childrens-killer-dimensional-covering.trycloudflare.com';
+  static const String _baseUrl = 'https://seattle-expert-mounting-walnut.trycloudflare.com';
   
   // Session management para Conversation Buffer
   static String? _currentSessionId;

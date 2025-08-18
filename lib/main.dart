@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'clean_app_flow.dart';
-import 'services/integrated_auth_service.dart';
+import 'services/simple_auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -9,8 +9,8 @@ void main() async {
   // Carregar variáveis de ambiente
   await dotenv.load(fileName: ".env");
   
-  // Inicializar serviço de autenticação integrado
-  await IntegratedAuthService.initialize();
+  // Inicializar serviço de autenticação simplificado (sem Supabase)
+  await SimpleAuthService.initialize();
   
   runApp(MyApp());
 }
