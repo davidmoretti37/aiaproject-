@@ -485,77 +485,8 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                   ),
                 ),
                 
-                // Status Text
-                Positioned(
-                  bottom: 200,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Text(
-                      _getStatusText(),
-                      style: GoogleFonts.inter(
-                        color: _getOrbColor(),
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ),
-                ),
                 
-                // Listening Text
-                if (_isListening && _listeningText.isNotEmpty)
-                  Positioned(
-                    bottom: 120,
-                    left: 40,
-                    right: 40,
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(
-                          color: Colors.green.withOpacity(0.3),
-                        ),
-                      ),
-                      child: Text(
-                        _listeningText,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontSize: 16,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ),
                 
-                // Response Text
-                if (_currentResponse.isNotEmpty)
-                  Positioned(
-                    bottom: 120,
-                    left: 40,
-                    right: 40,
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.1),
-                        ),
-                      ),
-                      child: Text(
-                        _currentResponse,
-                        textAlign: TextAlign.center,
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontSize: 16,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ),
                 
               ],
             ),

@@ -6,6 +6,7 @@ import os
 import controlflow as cf
 from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
+from uuid import UUID
 import re
 from supabase import create_client, Client
 from dotenv import load_dotenv
