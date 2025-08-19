@@ -67,6 +67,8 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   bool _isAISpeaking = false;
   OpenAIRealtimeService? _openAIService;
   Timer? _aiStopToIdleTimer;
+  final ScrollController _aiTranscriptScrollController = ScrollController();
+  final List<String> _aiTranscriptLines = [];
 
   String _listeningText = '';
   String _currentResponse = '';
@@ -224,6 +226,29 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
 
       _openAIService = OpenAIRealtimeService(
         userName: userId, // ID real do usuário logado
+        onAITranscriptDelta: (String delta) {
+          setState(() {
+            // Força o estado para speaking ao receber o primeiro delta
+            if (_currentState != OrbState.speaking) {
+              _currentState = OrbState.speaking;
+            }
+            if (_aiTranscriptLines.isEmpty || _aiTranscriptLines.last.endsWith('\n')) {
+              _aiTranscriptLines.add(delta);
+            } else {
+              _aiTranscriptLines[_aiTranscriptLines.length - 1] += delta;
+            }
+          });
+          // Rolagem automática para o final
+          Future.delayed(const Duration(milliseconds: 50), () {
+            if (_aiTranscriptScrollController.hasClients) {
+              _aiTranscriptScrollController.animateTo(
+                _aiTranscriptScrollController.position.maxScrollExtent,
+                duration: const Duration(milliseconds: 200),
+                curve: Curves.easeOut,
+              );
+            }
+          });
+        },
         onAudioResponse: (audioData) {
           debugPrint('[AIA Orb] Recebendo áudio: ${audioData.length} bytes');
           setState(() {
@@ -270,6 +295,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
             _currentState = OrbState.speaking;
             _shouldShowCircleUp = false;
             _isAIPlayingAudio = true;
+            _aiTranscriptLines.clear();
           });
         },
         onAIStopSpeaking: () {
@@ -281,6 +307,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
               setState(() {
                 _currentState = OrbState.idle;
                 _shouldShowCircleUp = false;
+                _aiTranscriptLines.clear();
               });
             }
           });
@@ -328,6 +355,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
 
   Future<void> _startListening() async {
     // Método legado mantido para compatibilidade, mas agora usa Realtime
+    debugPrint('[AIA LOG] _startListening chamado: iniciando escuta imediatamente');
     await _startRealtimeConversation();
   }
 
@@ -566,6 +594,69 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                   ),
                 ),
                 // Main Orb (clean, no debugging visuals)
+                // Transcrição da IA no topo
+                if (_currentState == OrbState.speaking && _aiTranscriptLines.isNotEmpty)
+                  Positioned(
+                    top: 230,
+                    left: 0,
+                    right: 0,
+                    child: SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        controller: _aiTranscriptScrollController,
+                        itemCount: _aiTranscriptLines.length,
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: Text(
+                              _aiTranscriptLines[index],
+                              style: GoogleFonts.inter(
+                                color: const Color(0xFF444648),
+                                fontSize: 20,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                // Botão de configurações na extrema direita
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Reload icon (esquerda)
+                          IconButton(
+                            icon: Icon(Icons.refresh, color: Color(0xFF464646), size: 26),
+                            onPressed: _reload,
+                            tooltip: 'Reload',
+                          ),
+                          // Config icon (direita)
+                          IconButton(
+                            icon: Icon(Icons.settings, color: Color(0xFF464646), size: 26),
+                            onPressed: () {
+                              debugPrint('[AIA LOG] Botão de configurações pressionado');
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                              );
+                            },
+                            tooltip: 'Configurações',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
                 Center(
                   child: Stack(
                     alignment: Alignment.center,

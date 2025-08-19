@@ -9,6 +9,7 @@ import 'audio_service.dart';
 import 'aia_api_service.dart';
 
 typedef UserInputTranscriptionCompletedCallback = void Function(String transcript);
+typedef AITranscriptDeltaCallback = void Function(String delta);
 
 class OpenAIRealtimeService {
   RTCPeerConnection? _peerConnection;
@@ -51,6 +52,7 @@ class OpenAIRealtimeService {
 
   final VoidCallback? onAIStartSpeaking;
   final VoidCallback? onAIStopSpeaking;
+  final AITranscriptDeltaCallback? onAITranscriptDelta;
   final UserInputTranscriptionCompletedCallback? onUserInputTranscriptionCompleted;
 
   OpenAIRealtimeService({
@@ -60,6 +62,7 @@ class OpenAIRealtimeService {
     this.userName,
     this.onAIStartSpeaking,
     this.onAIStopSpeaking,
+    this.onAITranscriptDelta,
     this.onUserInputTranscriptionCompleted,
   });
 
@@ -396,6 +399,7 @@ class OpenAIRealtimeService {
           final delta = data['delta'] as String?;
           if (delta != null) {
             _currentIAResponse += delta;
+            if (onAITranscriptDelta != null) onAITranscriptDelta!(delta);
           }
           break;
           
