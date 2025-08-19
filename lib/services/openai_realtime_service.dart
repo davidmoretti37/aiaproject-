@@ -8,6 +8,8 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'audio_service.dart';
 import 'aia_api_service.dart';
 
+typedef UserInputTranscriptionCompletedCallback = void Function(String transcript);
+
 class OpenAIRealtimeService {
   RTCPeerConnection? _peerConnection;
   RTCDataChannel? _dataChannel;
@@ -49,6 +51,7 @@ class OpenAIRealtimeService {
 
   final VoidCallback? onAIStartSpeaking;
   final VoidCallback? onAIStopSpeaking;
+  final UserInputTranscriptionCompletedCallback? onUserInputTranscriptionCompleted;
 
   OpenAIRealtimeService({
     this.onListeningStarted,
@@ -57,6 +60,7 @@ class OpenAIRealtimeService {
     this.userName,
     this.onAIStartSpeaking,
     this.onAIStopSpeaking,
+    this.onUserInputTranscriptionCompleted,
   });
 
   Future<bool> iniciarConexaoComOpenAI() async {

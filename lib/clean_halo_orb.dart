@@ -66,6 +66,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   bool _isRealtimeConnecting = false;
   bool _isAISpeaking = false;
   OpenAIRealtimeService? _openAIService;
+  Timer? _aiStopToIdleTimer;
 
   String _listeningText = '';
   String _currentResponse = '';
@@ -234,8 +235,8 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
           debugPrint('[AIA Orb] Resposta recebida');
           setState(() {
             _isAISpeaking = false;
-            _currentState = OrbState.listening;
             _hasInteracted = true;
+            // Não altera _currentState aqui!
           });
         },
         onListeningStarted: () {
@@ -264,6 +265,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
         onAIStartSpeaking: () {
           print('[AIA LOG] Evento OpenAI: IA começou a falar (setando speaking)');
           _listeningDelayTimer?.cancel();
+          _aiStopToIdleTimer?.cancel();
           setState(() {
             _currentState = OrbState.speaking;
             _shouldShowCircleUp = false;
@@ -271,16 +273,18 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
           });
         },
         onAIStopSpeaking: () {
-          print('[AIA LOG] Evento OpenAI: IA parou de falar (setando listening com delay)');
-          Future.delayed(const Duration(milliseconds: 800), () {
-            if (mounted && _isAIPlayingAudio && _currentState == OrbState.speaking) {
+          print('[AIA LOG] Evento OpenAI: IA parou de falar (aguardando possível input do usuário antes de idle)');
+          _aiStopToIdleTimer?.cancel();
+          _aiStopToIdleTimer = Timer(const Duration(milliseconds: 1200), () {
+            if (!mounted) return;
+            if (_currentState == OrbState.speaking && !_isAIPlayingAudio) {
               setState(() {
-                _currentState = OrbState.listening;
+                _currentState = OrbState.idle;
                 _shouldShowCircleUp = false;
-                _isAIPlayingAudio = false;
               });
             }
           });
+          _isAIPlayingAudio = false;
         },
       );
 
@@ -572,7 +576,9 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                           _stateController,
                         ]),
                         builder: (context, child) {
-                          print('[AIA LOG] AnimatedBuilder rebuild. Estado: $_currentState');
+                          print(
+                            '[AIA LOG] AnimatedBuilder rebuild. Estado: $_currentState',
+                          );
                           double finalScale = _breathingScale.value;
                           if (_currentState == OrbState.listening) {
                             finalScale *= (1.0 + (_currentSoundLevel * 0.3));
@@ -581,16 +587,23 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                           Alignment orbAlignment;
                           double orbSize;
                           if (_currentState == OrbState.speaking) {
-                            orbAlignment = Alignment(0, 1.3); // Centraliza exatamente entre os botões
-                            orbSize = 120; // Ajuste para centralizar visualmente
+                            orbAlignment = Alignment(
+                              0,
+                              1.3,
+                            ); // Centraliza exatamente entre os botões
+                            orbSize =
+                                120; // Ajuste para centralizar visualmente
                           } else {
                             orbAlignment = Alignment.center;
                             orbSize = 340;
                           }
                           return GestureDetector(
                             onTap: () async {
-                              print('[AIA LOG] Orb tap. Estado: $_currentState');
-                              if (_isAIPlayingAudio) return; // Bloqueia interação enquanto IA fala
+                              print(
+                                '[AIA LOG] Orb tap. Estado: $_currentState',
+                              );
+                              if (_isAIPlayingAudio)
+                                return; // Bloqueia interação enquanto IA fala
                               if (_currentState == OrbState.idle) {
                                 await _startRealtimeConversation();
                               } else if (_isRealtimeConnected) {
@@ -609,9 +622,12 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                                 height: orbSize,
                                 child: AIAVideoPlayer(
                                   size: orbSize,
-                                  isListening: _currentState == OrbState.listening,
-                                  isProcessing: _currentState == OrbState.processing,
-                                  isSpeaking: _currentState == OrbState.speaking,
+                                  isListening:
+                                      _currentState == OrbState.listening,
+                                  isProcessing:
+                                      _currentState == OrbState.processing,
+                                  isSpeaking:
+                                      _currentState == OrbState.speaking,
                                 ),
                               ),
                             ),
