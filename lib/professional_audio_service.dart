@@ -13,7 +13,8 @@ import 'dart:convert';
 /// Professional-grade audio service with real-time processing
 /// Provides smooth transitions like OpenAI, Google, and Apple
 class ProfessionalAudioService {
-  static final ProfessionalAudioService _instance = ProfessionalAudioService._internal();
+  static final ProfessionalAudioService _instance =
+      ProfessionalAudioService._internal();
   factory ProfessionalAudioService() => _instance;
   ProfessionalAudioService._internal();
 
@@ -22,61 +23,61 @@ class ProfessionalAudioService {
   FlutterSoundPlayer? _player;
   AudioPlayer? _audioPlayer;
   AudioSession? _session;
-  
+
   // State management
   bool _isInitialized = false;
   bool _isRecording = false;
   bool _isPlaying = false;
   bool _isProcessing = false;
-  
+
   // Real-time audio processing
   StreamController<Uint8List>? _audioStreamController;
   StreamController<double>? _volumeLevelController;
   StreamController<String>? _transcriptionController;
   StreamController<AudioState>? _stateController;
   StreamSubscription? _recorderSubscription;
-  
+
   // Voice Activity Detection (VAD)
   Timer? _vadTimer;
   double _currentVolumeLevel = 0.0;
   double _vadThreshold = -45.0; // VAD threshold in dB
   int _silenceCounter = 0;
   static const int _maxSilenceFrames = 30; // ~1 second at 30fps
-  
+
   // Buffering for smooth transitions
   List<Uint8List> _audioBuffer = [];
   String _partialTranscription = '';
-  
+
   // Configuration
-  static const String _serverUrl = 'https://furthermore-enjoying-speeds-integral.trycloudflare.com';
+  static const String _serverUrl =
+      'https://associations-harris-greetings-es.trycloudflare.com';
   static const int _sampleRate = 16000;
 
   /// Initialize the professional audio system
   Future<bool> initialize() async {
     if (_isInitialized) return true;
-    
+
     try {
       print('🎤 Initializing Professional Audio Service...');
-      
+
       // Request permissions
       await _requestPermissions();
-      
+
       // Initialize audio session
       await _initializeAudioSession();
-      
+
       // Initialize audio components
       await _initializeAudioComponents();
-      
+
       // Setup real-time streams
       _setupRealTimeStreams();
-      
+
       // Enable wakelock for voice sessions
       await WakelockPlus.enable();
-      
+
       _isInitialized = true;
       print('✅ Professional Audio Service initialized successfully');
       return true;
-      
     } catch (e) {
       print('❌ Failed to initialize Professional Audio Service: $e');
       return false;
@@ -90,7 +91,7 @@ class ProfessionalAudioService {
       Permission.storage,
       Permission.audio,
     ];
-    
+
     for (final permission in permissions) {
       final status = await permission.request();
       if (status != PermissionStatus.granted) {
@@ -102,21 +103,25 @@ class ProfessionalAudioService {
   /// Initialize audio session with professional settings
   Future<void> _initializeAudioSession() async {
     _session = await AudioSession.instance;
-    await _session!.configure(AudioSessionConfiguration(
-      avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
-      avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.allowBluetooth |
-          AVAudioSessionCategoryOptions.defaultToSpeaker,
-      avAudioSessionMode: AVAudioSessionMode.spokenAudio,
-      avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
-      avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
-      androidAudioAttributes: const AndroidAudioAttributes(
-        contentType: AndroidAudioContentType.speech,
-        flags: AndroidAudioFlags.audibilityEnforced,
-        usage: AndroidAudioUsage.voiceCommunication,
+    await _session!.configure(
+      AudioSessionConfiguration(
+        avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
+        avAudioSessionCategoryOptions:
+            AVAudioSessionCategoryOptions.allowBluetooth |
+            AVAudioSessionCategoryOptions.defaultToSpeaker,
+        avAudioSessionMode: AVAudioSessionMode.spokenAudio,
+        avAudioSessionRouteSharingPolicy:
+            AVAudioSessionRouteSharingPolicy.defaultPolicy,
+        avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
+        androidAudioAttributes: const AndroidAudioAttributes(
+          contentType: AndroidAudioContentType.speech,
+          flags: AndroidAudioFlags.audibilityEnforced,
+          usage: AndroidAudioUsage.voiceCommunication,
+        ),
+        androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
+        androidWillPauseWhenDucked: true,
       ),
-      androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
-      androidWillPauseWhenDucked: true,
-    ));
+    );
   }
 
   /// Initialize audio components
@@ -125,11 +130,11 @@ class ProfessionalAudioService {
     _recorder = FlutterSoundRecorder();
     await _recorder!.openRecorder();
     await _recorder!.setSubscriptionDuration(const Duration(milliseconds: 100));
-    
+
     // Initialize player for smooth playback
     _player = FlutterSoundPlayer();
     await _player!.openPlayer();
-    
+
     // Initialize just_audio for high-performance playback
     _audioPlayer = AudioPlayer();
   }
@@ -150,31 +155,30 @@ class ProfessionalAudioService {
     Function(AudioState)? onStateChange,
   }) async {
     if (!_isInitialized || _isRecording) return false;
-    
+
     try {
       print('🎙️ Starting professional voice recording...');
-      
+
       _isRecording = true;
       _isProcessing = false;
       _audioBuffer.clear();
       _partialTranscription = '';
       _silenceCounter = 0;
-      
+
       // Notify state change
       _stateController?.add(AudioState.listening);
       onStateChange?.call(AudioState.listening);
-      
+
       // Start real-time recording with streaming
       await _startRealTimeRecording(
         onPartialResult: onPartialResult,
         onVolumeLevel: onVolumeLevel,
       );
-      
+
       // Start Voice Activity Detection
       _startVAD();
-      
+
       return true;
-      
     } catch (e) {
       print('❌ Failed to start listening: $e');
       _isRecording = false;
@@ -188,9 +192,9 @@ class ProfessionalAudioService {
     Function(double)? onVolumeLevel,
   }) async {
     _audioStreamController = StreamController<Uint8List>.broadcast();
-    
+
     _audioStreamController = StreamController<Uint8List>.broadcast();
-    
+
     // Listen to the audio stream for data chunks
     _recorderSubscription = _audioStreamController!.stream.listen((data) {
       _audioBuffer.add(data);
@@ -222,7 +226,7 @@ class ProfessionalAudioService {
     try {
       // Convert audio to base64 for transmission
       final base64Audio = base64Encode(audioChunk);
-      
+
       final response = await http.post(
         Uri.parse('$_serverUrl/transcribe-stream'),
         headers: {'Content-Type': 'application/json'},
@@ -232,18 +236,18 @@ class ProfessionalAudioService {
           'is_partial': true,
         }),
       );
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final transcription = data['transcription'] ?? '';
-        
-        if (transcription.isNotEmpty && transcription != _partialTranscription) {
+
+        if (transcription.isNotEmpty &&
+            transcription != _partialTranscription) {
           _partialTranscription = transcription;
           _transcriptionController?.add(transcription);
           onPartialResult?.call(transcription);
         }
       }
-      
     } catch (e) {
       print('⚠️ Error sending audio chunk: $e');
     }
@@ -256,16 +260,17 @@ class ProfessionalAudioService {
         timer.cancel();
         return;
       }
-      
+
       // Check if user is speaking
       if (_currentVolumeLevel > _vadThreshold) {
         _silenceCounter = 0;
       } else {
         _silenceCounter++;
       }
-      
+
       // Auto-process after silence period
-      if (_silenceCounter >= _maxSilenceFrames && _partialTranscription.isNotEmpty) {
+      if (_silenceCounter >= _maxSilenceFrames &&
+          _partialTranscription.isNotEmpty) {
         print('🔇 Silence detected, auto-processing transcription');
         stopListening();
       }
@@ -275,28 +280,27 @@ class ProfessionalAudioService {
   /// Stop listening and return final transcription
   Future<String> stopListening() async {
     if (!_isRecording) return '';
-    
+
     try {
       print('🛑 Stopping professional voice recording...');
-      
+
       _isRecording = false;
-      
+
       // Stop VAD
       _vadTimer?.cancel();
-      
+
       // Stop recording
       await _recorder!.stopRecorder();
       await _recorderSubscription?.cancel();
       await _audioStreamController?.close();
-      
+
       // Get final transcription
       final finalTranscription = await _getFinalTranscription();
-      
+
       // Notify state change
       _stateController?.add(AudioState.processing);
-      
+
       return finalTranscription;
-      
     } catch (e) {
       print('❌ Error stopping recording: $e');
       return _partialTranscription;
@@ -311,19 +315,16 @@ class ProfessionalAudioService {
         final response = await http.post(
           Uri.parse('$_serverUrl/transcribe-final'),
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'partial_transcription': _partialTranscription,
-          }),
+          body: jsonEncode({'partial_transcription': _partialTranscription}),
         );
-        
+
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
           return data['final_transcription'] ?? _partialTranscription;
         }
       }
-      
+
       return _partialTranscription;
-      
     } catch (e) {
       print('⚠️ Error getting final transcription: $e');
       return _partialTranscription;
@@ -331,43 +332,44 @@ class ProfessionalAudioService {
   }
 
   /// Play AI response with smooth transitions
-  Future<void> playResponse(String text, {
+  Future<void> playResponse(
+    String text, {
     Function()? onStart,
     Function()? onComplete,
     Function(AudioState)? onStateChange,
   }) async {
     if (_isPlaying) return;
-    
+
     try {
       print('🔊 Playing AI response with professional audio...');
-      
+
       _isPlaying = true;
-      
+
       // Notify state change
       _stateController?.add(AudioState.speaking);
       onStateChange?.call(AudioState.speaking);
       onStart?.call();
-      
+
       // Get audio from TTS service
       final audioUrl = await _getAudioFromTTS(text);
-      
+
       if (audioUrl != null) {
         // Play with just_audio for high performance
         await _audioPlayer!.setUrl(audioUrl);
         await _audioPlayer!.play();
-        
+
         // Wait for completion
-        await _audioPlayer!.playerStateStream
-            .firstWhere((state) => state.processingState == ProcessingState.completed);
+        await _audioPlayer!.playerStateStream.firstWhere(
+          (state) => state.processingState == ProcessingState.completed,
+        );
       }
-      
+
       _isPlaying = false;
-      
+
       // Notify completion
       _stateController?.add(AudioState.idle);
       onStateChange?.call(AudioState.idle);
       onComplete?.call();
-      
     } catch (e) {
       print('❌ Error playing response: $e');
       _isPlaying = false;
@@ -380,20 +382,15 @@ class ProfessionalAudioService {
       final response = await http.post(
         Uri.parse('$_serverUrl/tts'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'text': text,
-          'voice': 'professional',
-          'speed': 1.0,
-        }),
+        body: jsonEncode({'text': text, 'voice': 'professional', 'speed': 1.0}),
       );
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return data['audio_url'];
       }
-      
+
       return null;
-      
     } catch (e) {
       print('⚠️ Error getting TTS audio: $e');
       return null;
@@ -402,25 +399,25 @@ class ProfessionalAudioService {
 
   /// Get real-time audio stream
   Stream<Uint8List> get audioStream => _audioStreamController!.stream;
-  
+
   /// Get real-time volume level stream
   Stream<double> get volumeLevelStream => _volumeLevelController!.stream;
-  
+
   /// Get real-time transcription stream
   Stream<String> get transcriptionStream => _transcriptionController!.stream;
-  
+
   /// Get audio state stream
   Stream<AudioState> get stateStream => _stateController!.stream;
-  
+
   /// Check if currently recording
   bool get isRecording => _isRecording;
-  
+
   /// Check if currently playing
   bool get isPlaying => _isPlaying;
-  
+
   /// Check if currently processing
   bool get isProcessing => _isProcessing;
-  
+
   /// Get current volume level
   double get currentVolumeLevel => _currentVolumeLevel;
 
@@ -429,23 +426,22 @@ class ProfessionalAudioService {
     try {
       _isRecording = false;
       _isPlaying = false;
-      
+
       _vadTimer?.cancel();
-      
+
       await _recorder?.closeRecorder();
       await _player?.closePlayer();
       await _audioPlayer?.dispose();
-      
+
       await _recorderSubscription?.cancel();
       await _audioStreamController?.close();
       await _volumeLevelController?.close();
       await _transcriptionController?.close();
       await _stateController?.close();
-      
+
       await WakelockPlus.disable();
-      
+
       _isInitialized = false;
-      
     } catch (e) {
       print('⚠️ Error disposing audio service: $e');
     }
@@ -453,10 +449,4 @@ class ProfessionalAudioService {
 }
 
 /// Audio state enumeration
-enum AudioState {
-  idle,
-  listening,
-  processing,
-  speaking,
-  error,
-}
+enum AudioState { idle, listening, processing, speaking, error }

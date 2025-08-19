@@ -497,8 +497,9 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
                 
                 // Floating Navigation Bar
                 AIABottomNavigation(
-                  currentIndex: _currentNavIndex,
-                  onTap: _onNavTap,
+                  isMuted: _isMuted,
+                  onChatTap: () {}, // Já está na tela de chat
+                  onMuteTap: _toggleMute,
                 ),
               ],
             ),

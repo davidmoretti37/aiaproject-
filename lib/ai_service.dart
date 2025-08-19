@@ -5,19 +5,25 @@ import 'services/aia_api_service.dart';
 
 class AIService {
   // Backend simples local (fallback apenas)
-  static const String baseUrl = String.fromEnvironment('BACKEND_URL', defaultValue: 'https://furthermore-enjoying-speeds-integral.trycloudflare.com');
+  static const String baseUrl = String.fromEnvironment(
+    'BACKEND_URL',
+    defaultValue: 'https://associations-harris-greetings-es.trycloudflare.com',
+  );
 
-  
   // Initialize Google Auth Service
   Future<void> initializeAuth() async {
     await GoogleAuthService.initialize();
   }
-  
-  Future<Map<String, dynamic>> sendMessage(String message, {String? sessionId}) async {
+
+  Future<Map<String, dynamic>> sendMessage(
+    String message, {
+    String? sessionId,
+  }) async {
     try {
       // Use provided session ID or generate a default one
-      final effectiveSessionId = sessionId ?? 'flutter_user_${DateTime.now().millisecondsSinceEpoch}';
-      
+      final effectiveSessionId =
+          sessionId ?? 'flutter_user_${DateTime.now().millisecondsSinceEpoch}';
+
       // Get Google access token if user is signed in
       String? accessToken;
       String? userEmail;
@@ -25,30 +31,33 @@ class AIService {
         accessToken = await GoogleAuthService.getAccessToken();
         userEmail = GoogleAuthService.getUserEmail();
       }
-      
+
       print('📤 Analyzing message: $message');
       print('🔑 Session ID: $effectiveSessionId');
       print('👤 User Email: $userEmail');
-      
+
       // 🧠 PRIORIDADE: Sempre tentar backend AIA primeiro
       print('🎯 Trying AIA backend first for: $message');
-      
+
       // Verificar se o backend AIA está disponível
       final aiaHealthy = await AIAApiService.healthCheck();
       if (aiaHealthy) {
         print('✅ AIA Backend is healthy, using advanced AI system');
-        
+
         // Usar o sistema avançado do AIAV3
         final aiaResult = await AIAApiService.executeTask(
-          message, 
+          message,
           userId: userEmail ?? 'aiaproject_user',
           sessionId: effectiveSessionId,
         );
-        
+
         if (aiaResult != null && aiaResult['success'] == true) {
           print('🚀 AIA executed successfully: ${aiaResult['message']}');
           return {
-            'message': aiaResult['message'] ?? aiaResult['response'] ?? 'Tarefa executada com sucesso',
+            'message':
+                aiaResult['message'] ??
+                aiaResult['response'] ??
+                'Tarefa executada com sucesso',
             'metadata': aiaResult['metadata'],
             'agent_used': aiaResult['agent_used'] ?? 'aia_advanced',
             'session_id': aiaResult['session_id'] ?? effectiveSessionId,
@@ -62,25 +71,23 @@ class AIService {
       } else {
         print('⚠️ AIA Backend not available, falling back to simple backend');
       }
-      
+
       // 🔄 FALLBACK: Usar backend simples original
       print('📤 Sending to simple backend: $baseUrl/chat');
-      
+
       final requestBody = {
         'message': message,
         'session_id': effectiveSessionId,
         'user_id': userEmail ?? 'flutter_user',
       };
 
-      final headers = {
-        'Content-Type': 'application/json',
-      };
+      final headers = {'Content-Type': 'application/json'};
 
       // Add Google access token to header if available
       if (accessToken != null) {
         headers['Authorization'] = 'Bearer $accessToken';
       }
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/chat'),
         headers: headers,
@@ -93,7 +100,8 @@ class AIService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         return {
-          'message': data['response'] ?? data['message'] ?? 'No response received',
+          'message':
+              data['response'] ?? data['message'] ?? 'No response received',
           'metadata': data['metadata'] ?? data['data'],
           'agent_used': data['agent_used'] ?? 'simple_backend',
           'session_id': data['session_id'] ?? effectiveSessionId,
@@ -164,9 +172,7 @@ class AIService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/agents'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
       );
 
       if (response.statusCode == 200) {
@@ -188,14 +194,14 @@ class AIService {
   }) async {
     try {
       print('📧 Sending confirmed email to: $to');
-      
+
       final requestBody = {
         'to': to,
         'subject': subject,
         'body': body,
         'session_id': sessionId,
       };
-      
+
       // Add Google access token if signed in
       if (GoogleAuthService.isSignedIn()) {
         final accessToken = await GoogleAuthService.getAccessToken();
@@ -203,17 +209,17 @@ class AIService {
           requestBody['google_access_token'] = accessToken;
         }
       }
-      
+
       final response = await http.post(
         Uri.parse('$baseUrl/send-confirmed-email'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
         body: json.encode(requestBody),
       );
-      
-      print('📧 Email send response: ${response.statusCode} - ${response.body}');
-      
+
+      print(
+        '📧 Email send response: ${response.statusCode} - ${response.body}',
+      );
+
       if (response.statusCode == 200) {
         final responseData = json.decode(response.body);
         return {
@@ -228,10 +234,7 @@ class AIService {
       }
     } catch (e) {
       print('❌ Error sending confirmed email: $e');
-      return {
-        'success': false,
-        'message': 'Erro de conexão ao enviar email.',
-      };
+      return {'success': false, 'message': 'Erro de conexão ao enviar email.'};
     }
   }
 
@@ -243,21 +246,23 @@ class AIService {
       print('✅ AIA Backend is healthy and available');
       return true;
     }
-    
+
     // 🔄 FALLBACK: Verificar backend simples local
     try {
       print('🔍 Checking simple backend health at: $baseUrl/health');
       final response = await http.get(
         Uri.parse('$baseUrl/health'),
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: {'Content-Type': 'application/json'},
       );
-      print('✅ Simple backend response: ${response.statusCode} - ${response.body}');
+      print(
+        '✅ Simple backend response: ${response.statusCode} - ${response.body}',
+      );
       return response.statusCode == 200;
     } catch (e) {
       print('❌ Simple backend health check failed: $e');
-      print('ℹ️ No backends available - app will work with limited functionality');
+      print(
+        'ℹ️ No backends available - app will work with limited functionality',
+      );
       return false;
     }
   }

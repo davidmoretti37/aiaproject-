@@ -47,11 +47,16 @@ class OpenAIRealtimeService {
     'sdpSemantics': 'unified-plan'
   };
 
+  final VoidCallback? onAIStartSpeaking;
+  final VoidCallback? onAIStopSpeaking;
+
   OpenAIRealtimeService({
     this.onListeningStarted,
     this.onConversationDone,
     this.onAudioResponse,
     this.userName,
+    this.onAIStartSpeaking,
+    this.onAIStopSpeaking,
   });
 
   Future<bool> iniciarConexaoComOpenAI() async {
@@ -300,10 +305,12 @@ class OpenAIRealtimeService {
           
         case 'output_audio_buffer.started':
           debugPrint('[OpenAI Realtime] IA começou a falar');
+          if (onAIStartSpeaking != null) onAIStartSpeaking!();
           break;
           
         case 'output_audio_buffer.stopped':
           debugPrint('[OpenAI Realtime] IA parou de falar');
+          if (onAIStopSpeaking != null) onAIStopSpeaking!();
           break;
           
         case 'response.audio.delta':

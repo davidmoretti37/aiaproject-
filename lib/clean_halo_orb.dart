@@ -17,10 +17,10 @@ import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum OrbState {
-  idle,       // Blue, calm breathing
-  listening,  // Green, reactive to voice
+  idle, // Blue, calm breathing
+  listening, // Green, reactive to voice
   processing, // Orange, thinking
-  speaking    // Purple, speaking response
+  speaking, // Purple, speaking response
 }
 
 class CleanHaloOrb extends StatefulWidget {
@@ -39,44 +39,48 @@ class CleanHaloOrb extends StatefulWidget {
 
 class _CleanHaloOrbState extends State<CleanHaloOrb>
     with TickerProviderStateMixin {
-  
   // Animation controllers
   late AnimationController _breathingController;
   late AnimationController _fadeInController;
   late AnimationController _stateController;
-  
+
   // Animations
   late Animation<double> _breathingScale;
   late Animation<double> _fadeInOpacity;
   late Animation<double> _stateTransition;
-  
+
   // AI components
   late stt.SpeechToText _speech;
   late FlutterTts _flutterTts;
-  
+
   // State management
   OrbState _currentState = OrbState.idle;
   bool _isListening = false;
   bool _isProcessing = false;
   bool _isSpeaking = false;
   bool _isServerConnected = false;
-  
+  bool _isMuted = false;
+
   // OpenAI Realtime state
   bool _isRealtimeConnected = false;
   bool _isRealtimeConnecting = false;
   bool _isAISpeaking = false;
   OpenAIRealtimeService? _openAIService;
-  
+
   String _listeningText = '';
   String _currentResponse = '';
   double _currentSoundLevel = 0.0;
-  
+
   // Interaction tracking
   bool _hasInteracted = false;
-  
+
   // Navigation state
   int _currentNavIndex = 0;
   bool _showReminderWidget = false;
+  bool _hasSpokenOnce = false;
+  bool _shouldShowCircleUp = false;
+  Timer? _listeningDelayTimer;
+  bool _isAIPlayingAudio = false;
 
   @override
   void initState() {
@@ -93,44 +97,32 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     );
-    
+
     // Fade in animation
     _fadeInController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     // State transition animation
     _stateController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    
+
     // Setup animations
-    _breathingScale = Tween<double>(
-      begin: 1.0,
-      end: 1.05,
-    ).animate(CurvedAnimation(
-      parent: _breathingController,
-      curve: Curves.easeInOut,
-    ));
-    
-    _fadeInOpacity = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _fadeInController,
-      curve: Curves.easeOut,
-    ));
-    
-    _stateTransition = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _stateController,
-      curve: Curves.easeInOut,
-    ));
-    
+    _breathingScale = Tween<double>(begin: 1.0, end: 1.05).animate(
+      CurvedAnimation(parent: _breathingController, curve: Curves.easeInOut),
+    );
+
+    _fadeInOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeInController, curve: Curves.easeOut),
+    );
+
+    _stateTransition = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _stateController, curve: Curves.easeInOut),
+    );
+
     // Start continuous breathing
     _breathingController.repeat(reverse: true);
   }
@@ -143,28 +135,32 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
       onStatus: (val) => print('Speech recognition status: $val'),
     );
     print('Speech recognition available: $available');
-    
+
     // Initialize TTS
     _flutterTts = FlutterTts();
     await _flutterTts.setLanguage("en-US");
     await _flutterTts.setSpeechRate(0.5);
     await _flutterTts.setVolume(1.0);
     await _flutterTts.setPitch(0.9);
-    
+
     _flutterTts.setStartHandler(() {
+      print('[AIA LOG] TTS START - IA vai falar');
       setState(() {
         _isSpeaking = true;
         _currentState = OrbState.speaking;
       });
+      print('[AIA LOG] Estado após TTS START: $_currentState');
     });
-    
+
     _flutterTts.setCompletionHandler(() {
+      print('[AIA LOG] TTS END - IA terminou de falar');
       setState(() {
         _isSpeaking = false;
         _currentState = OrbState.idle;
         _currentResponse = '';
       });
-      
+      print('[AIA LOG] Estado após TTS END: $_currentState');
+
       // After first interaction, transition to chat
       if (_hasInteracted) {
         Future.delayed(const Duration(milliseconds: 1000), () {
@@ -206,27 +202,32 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
 
   Future<void> _startRealtimeConversation() async {
     if (_isRealtimeConnecting || _isRealtimeConnected) return;
-    
+
     setState(() {
       _isRealtimeConnecting = true;
       _currentState = OrbState.processing;
     });
+    // Reset delay/circle state
+    _shouldShowCircleUp = false;
+    _listeningDelayTimer?.cancel();
 
     try {
       // Criar serviço com callbacks
       // Obter ID real do usuário logado
       final currentUser = Supabase.instance.client.auth.currentUser;
       final userId = currentUser?.id ?? 'anonymous_user';
-      
-      debugPrint('[AIA Orb] 👤 Usuário logado: ${currentUser?.email ?? 'Anônimo'} (ID: $userId)');
-      
+
+      debugPrint(
+        '[AIA Orb] 👤 Usuário logado: ${currentUser?.email ?? 'Anônimo'} (ID: $userId)',
+      );
+
       _openAIService = OpenAIRealtimeService(
         userName: userId, // ID real do usuário logado
         onAudioResponse: (audioData) {
           debugPrint('[AIA Orb] Recebendo áudio: ${audioData.length} bytes');
           setState(() {
             _isAISpeaking = true;
-            _currentState = OrbState.speaking;
+            // Não muda para speaking aqui, deixa o evento controlar!
           });
         },
         onConversationDone: () {
@@ -245,6 +246,41 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
             _currentState = OrbState.listening;
           });
           _stateController.forward();
+
+          // Delay de 2s para subir o círculo na primeira fala do usuário
+          if (!_hasSpokenOnce) {
+            _hasSpokenOnce = true;
+          }
+          _shouldShowCircleUp = false;
+          _listeningDelayTimer?.cancel();
+          _listeningDelayTimer = Timer(const Duration(seconds: 2), () {
+            if (mounted && _currentState == OrbState.listening) {
+              setState(() {
+                _shouldShowCircleUp = true;
+              });
+            }
+          });
+        },
+        onAIStartSpeaking: () {
+          print('[AIA LOG] Evento OpenAI: IA começou a falar (setando speaking)');
+          _listeningDelayTimer?.cancel();
+          setState(() {
+            _currentState = OrbState.speaking;
+            _shouldShowCircleUp = false;
+            _isAIPlayingAudio = true;
+          });
+        },
+        onAIStopSpeaking: () {
+          print('[AIA LOG] Evento OpenAI: IA parou de falar (setando listening com delay)');
+          Future.delayed(const Duration(milliseconds: 800), () {
+            if (mounted && _isAIPlayingAudio && _currentState == OrbState.speaking) {
+              setState(() {
+                _currentState = OrbState.listening;
+                _shouldShowCircleUp = false;
+                _isAIPlayingAudio = false;
+              });
+            }
+          });
         },
       );
 
@@ -254,7 +290,8 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
         setState(() {
           _isRealtimeConnecting = false;
           _currentState = OrbState.idle;
-          _currentResponse = 'Falha ao conectar com a OpenAI. Verifique sua conexão.';
+          _currentResponse =
+              'Falha ao conectar com a OpenAI. Verifique sua conexão.';
         });
         _stateController.reverse();
         return;
@@ -275,7 +312,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
       await _openAIService!.encerrarConversa();
       _openAIService = null;
     }
-    
+
     setState(() {
       _isRealtimeConnected = false;
       _isRealtimeConnecting = false;
@@ -299,6 +336,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
 
   Future<void> _processInput(String input) async {
     if (input.trim().isEmpty) {
+      print('[AIA LOG] _processInput: input vazio, voltando para idle');
       setState(() {
         _currentState = OrbState.idle;
       });
@@ -306,42 +344,58 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
       return;
     }
 
+    print('[AIA LOG] _processInput: input recebido, mudando para processing');
     setState(() {
       _currentState = OrbState.processing;
       _isProcessing = true;
       _currentResponse = '';
       _hasInteracted = true;
     });
+    print('[AIA LOG] Estado após setState processing: $_currentState');
 
     try {
       print('🎯 [CleanHaloOrb] Processing input: $input');
-      
+
       // Usar o AIService que já tem integração com o sistema avançado
-      final response = await AIService().sendMessage(input, sessionId: widget.sessionId);
+      final response = await AIService().sendMessage(
+        input,
+        sessionId: widget.sessionId,
+      );
       final message = response['message'] ?? 'No response received';
       final executionType = response['execution_type'] ?? 'unknown';
       final agentUsed = response['agent_used'] ?? 'unknown';
-      
+
       print('🚀 [CleanHaloOrb] Response received: $message');
-      print('🧠 [CleanHaloOrb] Execution type: $executionType, Agent: $agentUsed');
-      
+      print(
+        '🧠 [CleanHaloOrb] Execution type: $executionType, Agent: $agentUsed',
+      );
+
       setState(() {
         _currentResponse = message;
         _isProcessing = false;
-        _currentState = OrbState.speaking;
+        // Não muda para speaking aqui, deixa o TTS controlar!
       });
-      
+      print('[AIA LOG] Estado após receber resposta: $_currentState');
+
       // Falar apenas a mensagem principal (sem informações de debug)
+      print('[AIA LOG] Chamando TTS.speak. Estado atual: $_currentState');
+      // Fallback: se o handler não for chamado, força o estado para speaking
+      if (_currentState != OrbState.speaking) {
+        print('[AIA LOG] Fallback: forçando estado para speaking antes do TTS');
+        setState(() {
+          _currentState = OrbState.speaking;
+        });
+      }
       await _flutterTts.speak(message);
-      
     } catch (e) {
       print('❌ [CleanHaloOrb] Error processing input: $e');
       setState(() {
-        _currentResponse = "I'm having trouble connecting right now. Please try again.";
+        _currentResponse =
+            "I'm having trouble connecting right now. Please try again.";
         _isProcessing = false;
         _currentState = OrbState.speaking;
       });
-      
+
       await _flutterTts.speak(_currentResponse);
     }
   }
@@ -366,7 +420,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
       case OrbState.listening:
         return 120.0; // Green
       case OrbState.processing:
-        return 30.0;  // Orange
+        return 30.0; // Orange
       case OrbState.speaking:
         return 280.0; // Purple
     }
@@ -404,12 +458,12 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
     _fadeInController.dispose();
     _stateController.dispose();
     _flutterTts.stop();
-    
+
     // Limpar OpenAI Realtime Service
     if (_openAIService != null) {
       _openAIService!.encerrarConversa();
     }
-    
+
     super.dispose();
   }
 
@@ -443,6 +497,30 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
     }
   }
 
+  void _toggleMute() {
+    print('[AIA LOG] Toggle mute. Antes: $_isMuted');
+    setState(() {
+      _isMuted = !_isMuted;
+    });
+    print('[AIA LOG] Toggle mute. Depois: $_isMuted');
+
+    if (_isMuted) {
+      _flutterTts.stop();
+      if (_openAIService != null) {
+        _openAIService!.muteAudio();
+      }
+    } else {
+      if (_openAIService != null) {
+        _openAIService!.unmuteAudio();
+      }
+    }
+  }
+
+  void _reload() {
+    // Você pode customizar o que o reload faz aqui
+    setState(() {});
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -454,20 +532,65 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
             opacity: _fadeInOpacity.value,
             child: Stack(
               children: [
+                // Top bar with reload (left) and settings (right)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          // Reload icon (left)
+                          IconButton(
+                            icon: Icon(
+                              Icons.refresh,
+                              color: Color(0xFF464646),
+                              size: 26,
+                            ),
+                            onPressed: _reload,
+                            tooltip: 'Reload',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
                 // Main Orb (clean, no debugging visuals)
                 Center(
                   child: Stack(
                     alignment: Alignment.center,
                     children: [
                       AnimatedBuilder(
-                        animation: Listenable.merge([_breathingController, _stateController]),
+                        animation: Listenable.merge([
+                          _breathingController,
+                          _stateController,
+                        ]),
                         builder: (context, child) {
+                          print('[AIA LOG] AnimatedBuilder rebuild. Estado: $_currentState');
                           double finalScale = _breathingScale.value;
                           if (_currentState == OrbState.listening) {
                             finalScale *= (1.0 + (_currentSoundLevel * 0.3));
                           }
+                          // Animação de posição e tamanho do vídeo da AIA
+                          Alignment orbAlignment;
+                          double orbSize;
+                          if (_currentState == OrbState.speaking) {
+                            orbAlignment = Alignment(0, 1.3); // Centraliza exatamente entre os botões
+                            orbSize = 120; // Ajuste para centralizar visualmente
+                          } else {
+                            orbAlignment = Alignment.center;
+                            orbSize = 340;
+                          }
                           return GestureDetector(
                             onTap: () async {
+                              print('[AIA LOG] Orb tap. Estado: $_currentState');
+                              if (_isAIPlayingAudio) return; // Bloqueia interação enquanto IA fala
                               if (_currentState == OrbState.idle) {
                                 await _startRealtimeConversation();
                               } else if (_isRealtimeConnected) {
@@ -475,23 +598,34 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                               }
                             },
                             behavior: HitTestBehavior.translucent,
-                            child: Transform.scale(
-                              scale: finalScale,
-                              child: AIAVideoPlayer(
-                                size: 340,
-                                isListening: _currentState == OrbState.listening,
-                                isProcessing: _currentState == OrbState.processing,
-                                isSpeaking: _currentState == OrbState.speaking,
+                            child: AnimatedAlign(
+                              duration: const Duration(milliseconds: 500),
+                              curve: Curves.easeInOut,
+                              alignment: orbAlignment,
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 500),
+                                curve: Curves.easeInOut,
+                                width: orbSize,
+                                height: orbSize,
+                                child: AIAVideoPlayer(
+                                  size: orbSize,
+                                  isListening: _currentState == OrbState.listening,
+                                  isProcessing: _currentState == OrbState.processing,
+                                  isSpeaking: _currentState == OrbState.speaking,
+                                ),
                               ),
                             ),
                           );
                         },
                       ),
-                      if (_currentState == OrbState.idle)
+                      if (_currentState == OrbState.idle && !_hasSpokenOnce)
                         Positioned(
                           bottom: 24,
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 12,
+                              horizontal: 32,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.92),
                               borderRadius: BorderRadius.circular(32),
@@ -523,18 +657,18 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                     ],
                   ),
                 ),
-                
-                
-                
-                
               ],
             ),
           );
         },
       ),
-      bottomNavigationBar: AIABottomNavigation(
-        currentIndex: _currentNavIndex,
-        onTap: _onNavItemTapped,
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.only(bottom: 60), // Sobe os botões para cima
+        child: AIABottomNavigation(
+          isMuted: _isMuted,
+          onChatTap: widget.onInteractionComplete,
+          onMuteTap: _toggleMute,
+        ),
       ),
     );
   }

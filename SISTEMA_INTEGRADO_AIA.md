@@ -7,12 +7,12 @@ O AIAPROJECT- agora está totalmente integrado com o sistema avançado de agente
 ## 🔧 Configuração Atual
 
 ### Backend AIA Avançado
-- **URL**: ` https://furthermore-enjoying-speeds-integral.trycloudflare.com `
+- **URL**: ` https://associations-harris-greetings-es.trycloudflare.com `
 - **Status**: ✅ Ativo e funcionando
 - **Agentes Disponíveis**: Gmail, Calendar, Transport, Food, etc.
 
 ### Backend Simples (Fallback)
-- **URL**: ` https://furthermore-enjoying-speeds-integral.trycloudflare.com `
+- **URL**: ` https://associations-harris-greetings-es.trycloudflare.com `
 - **Status**: ⚠️ Opcional (usado apenas como fallback)
 
 ## 🧠 Lógica de Funcionamento
@@ -120,7 +120,7 @@ O sistema gera logs detalhados para debug:
 ## 🔧 Troubleshooting
 
 ### Backend AIA não responde
-- Verificar se Cloudflare está ativo: ` https://furthermore-enjoying-speeds-integral.trycloudflare.com /health`
+- Verificar se Cloudflare está ativo: ` https://associations-harris-greetings-es.trycloudflare.com /health`
 - Logs mostrarão: "⚠️ AIA Backend not available, falling back to simple backend"
 
 ### Reconhecimento de voz não funciona

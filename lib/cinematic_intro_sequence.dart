@@ -2513,18 +2513,7 @@ gradient: RadialGradient(
               );
             },
           ),
-        // Reset Button
-        Positioned(
-          top: 40,
-          right: 20,
-          child: SafeArea(
-            child: IconButton(
-              icon: Icon(Icons.refresh, color: Colors.white.withOpacity(0.7)),
-              onPressed: _resetSequence,
-              tooltip: 'Reset Animation',
-            ),
-          ),
-        ),
+        
         ],
       ),
     );
