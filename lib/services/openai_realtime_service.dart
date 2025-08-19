@@ -16,6 +16,10 @@ class OpenAIRealtimeService {
   MediaStream? _localStream;
   MediaStream? _remoteStream;
 
+  // Novos callbacks para início/fim do áudio da IA
+  final VoidCallback? onAudioResponseStart; // Quando a IA começa a falar
+  final VoidCallback? onAudioResponseEnd;   // Quando a IA para de falar
+
   final VoidCallback? onListeningStarted;
   final VoidCallback? onConversationDone;
   final void Function(Uint8List)? onAudioResponse;
@@ -53,6 +57,8 @@ class OpenAIRealtimeService {
   };
 
   OpenAIRealtimeService({
+    this.onAudioResponseStart, // Novo callback
+    this.onAudioResponseEnd,   // Novo callback
     this.onListeningStarted,
     this.onConversationDone,
     this.onAudioResponse,
@@ -105,7 +111,8 @@ class OpenAIRealtimeService {
 
       _isConnected = true;
       _isProcessingConnection = false;
-      onListeningStarted?.call();
+      // onListeningStarted será chamado quando o canal de dados estiver aberto
+      // ou quando a sessão for atualizada via 'session.updated'
       return true;
     } catch (e) {
       debugPrint("[OpenAI Realtime] Erro ao iniciar conexão WebRTC: $e");
@@ -280,7 +287,8 @@ class OpenAIRealtimeService {
 
   void _processarMensagem(String rawData) async {
     try {
-      debugPrint('[OpenAI Realtime] Mensagem recebida: $rawData');
+      // Log opcional, pode ser muito verbose
+      // debugPrint('[OpenAI Realtime] Mensagem recebida: $rawData');
       final data = jsonDecode(rawData);
       final type = data['type'];
 
@@ -307,17 +315,28 @@ class OpenAIRealtimeService {
           debugPrint('[OpenAI Realtime] Usuário parou de falar');
           break;
           
+        // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        // EVENTOS CRUCIAIS PARA A TRANSIÇÃO DA INTERFACE
         case 'output_audio_buffer.started':
           debugPrint('[OpenAI Realtime] IA começou a falar');
+          // Forçar saída pelo alto-falante principal antes de iniciar a fala da IA
+          await AudioService.forceSpeakerOutput();
+          AudioService.maximizeSystemVolume();
+          // >>>>>>>> CHAMAR O CALLBACK PARA INÍCIO DA FALA DA IA <<<<<<<<<<
+          onAudioResponseStart?.call(); 
           break;
           
         case 'output_audio_buffer.stopped':
           debugPrint('[OpenAI Realtime] IA parou de falar');
+          // >>>>>>>> CHAMAR O CALLBACK PARA FIM DA FALA DA IA <<<<<<<<<<
+          onAudioResponseEnd?.call(); 
           break;
+        // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
           
         case 'response.audio.delta':
           final bytes = base64Decode(data['delta']);
-          debugPrint('[OpenAI Realtime] Áudio delta recebido: ${bytes.length} bytes');
+          // Log opcional para debug de áudio
+          // debugPrint('[OpenAI Realtime] Áudio delta recebido: ${bytes.length} bytes');
           onAudioResponse?.call(Uint8List.fromList(bytes));
           break;
           
@@ -345,7 +364,8 @@ class OpenAIRealtimeService {
         case 'conversation.item.input_audio_transcription.delta':
           final delta = data['delta'] as String?;
           if (delta != null) {
-            debugPrint('[OpenAI Realtime] Transcrição delta: "$delta"');
+            // Log opcional para debug de transcrição
+            // debugPrint('[OpenAI Realtime] Transcrição delta: "$delta"');
           }
           break;
           
@@ -368,7 +388,8 @@ class OpenAIRealtimeService {
           
         // Capturar chamadas de função
         case 'response.function_call_arguments.delta':
-          debugPrint('[OpenAI Realtime] Function call delta: ${data['delta']}');
+          // Log opcional para debug de chamadas de função
+          // debugPrint('[OpenAI Realtime] Function call delta: ${data['delta']}');
           break;
           
         case 'response.function_call_arguments.done':
@@ -432,7 +453,9 @@ class OpenAIRealtimeService {
           break;
           
         default:
-          debugPrint("[OpenAI Realtime] Evento desconhecido: $type");
+          // Log opcional para eventos desconhecidos, pode ser muito verbose
+          // debugPrint("[OpenAI Realtime] Evento desconhecido: $type");
+          break;
       }
     } catch (e) {
       debugPrint("[OpenAI Realtime] Erro ao processar evento: $e");
@@ -500,7 +523,7 @@ Você é a **AIA**, uma assistente de IA conversacional que atua como coordenado
 - Abertura automática do app com destino pré-configurado
 - **Tipos de Uber disponíveis**: UberX (padrão), Uber Black (premium)
 - **Detecção automática**: Reconhece pedidos de "Uber Black", "premium", "executivo"
-- **VOCÊ TEM ESTA CAPACIDADE DIRETAMENTE DISPONÍVEL**
+- **VOCÊ TEM ESTA CAPACIDADE DIRETAMENTE DISPONÍVEL** 
 
 ## PRINCÍPIOS FUNDAMENTAIS
 - **Conversa Natural**: Mantenha sempre um tom conversacional, empático e prestativo
@@ -1003,7 +1026,7 @@ Lembre-se: você é a coordenadora inteligente de 7 agentes especializados que g
           // Simplified format with both locations
           deeplink = 'uber://riderequest'
               '?pickup[latitude]=${pickupResult['lat']}'
-              '&pickup[longitude]=${pickupResult['lng']}'
+              '?pickup[longitude]=${pickupResult['lng']}'
               '&pickup[nickname]=${Uri.encodeComponent(pickupResult['formatted_address'])}'
               '&dropoff[latitude]=${destResult['lat']}'
               '&dropoff[longitude]=${destResult['lng']}'

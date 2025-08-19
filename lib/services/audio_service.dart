@@ -360,6 +360,11 @@ class AudioService {
     return getOptimizedAudioConstraintsForSpeaker();
   }
 
+  /// Força a saída de áudio para o alto-falante principal (público)
+  static Future<void> forceSpeakerOutput() async {
+    await _configureMainSpeakerAudioSession();
+  }
+
   /// Configura a sessão de áudio para alto-falante principal (não para chamada)
   static Future<void> _configureMainSpeakerAudioSession() async {
     try {

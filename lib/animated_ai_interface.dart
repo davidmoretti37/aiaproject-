@@ -119,33 +119,31 @@ class _AnimatedAIInterfaceState extends State<AnimatedAIInterface>
   void didUpdateWidget(AnimatedAIInterface oldWidget) {
     super.didUpdateWidget(oldWidget);
     
-    // Lógica mais clara e consistente de transição
+    // Lógica clara: mostrar faixa quando o usuário está falando
     bool shouldShowWave = widget.isUserSpeaking;
     bool wasShowingWave = oldWidget.isUserSpeaking;
     
-    // Detectar mudança de estado
     if (shouldShowWave != wasShowingWave) {
       setState(() {
         _showingWave = shouldShowWave;
       });
       
       if (shouldShowWave) {
-        // Usuário começou a falar - mostrar faixa
         debugPrint('🌊 Transição: Esfera → Faixa de onda (Usuário falando)');
         _transitionController.forward();
         _startTextAnimation();
       } else {
-        // Usuário parou de falar - voltar para esfera
-        debugPrint('🔵 Transição: Faixa de onda → Esfera (Usuário parou)');
+        debugPrint('🔵 Transição: Faixa de onda → Esfera (Usuário parou ou IA fala)');
         _transitionController.reverse();
         _stopTextAnimation();
-        _particles.clear();
+        _particles.clear(); // Limpar partículas ao sair
       }
     }
     
-    // Forçar transição para esfera quando IA fala
+    // Forçar transição para esfera quando IA começa a falar
+    // Esta verificação é redundante com a acima, mas serve como segurança
     if (widget.isAISpeaking && !oldWidget.isAISpeaking) {
-      debugPrint('🎙️ IA começou a falar - forçando transição para esfera');
+      debugPrint('🎙️ IA começou a falar - FORÇANDO transição para esfera');
       setState(() {
         _showingWave = false;
       });
@@ -154,14 +152,16 @@ class _AnimatedAIInterfaceState extends State<AnimatedAIInterface>
       _particles.clear();
     }
     
-    // Gerar partículas quando há som e texto
+    // Gerar partículas com base no som e texto transcrito
+    // Apenas se estamos mostrando a faixa e há atividade
     if (_showingWave && widget.soundLevel > 0.1 && widget.transcribedText.isNotEmpty) {
-      if (_particles.length < 20) { // Limitar número de partículas
+      // Limitar o número de partículas para performance
+      if (_particles.length < 25) { 
         _generateTextParticles();
       }
     }
     
-    // Atualizar texto transcrito
+    // Atualizar texto transcrito com animação de digitação
     if (widget.transcribedText != oldWidget.transcribedText) {
       _updateDisplayText(widget.transcribedText);
     }
@@ -525,10 +525,12 @@ class WaveWithParticlesPainter extends CustomPainter {
   
   @override
   bool shouldRepaint(WaveWithParticlesPainter oldDelegate) {
+    // Repintar se qualquer parâmetro relevante mudar
     return oldDelegate.animationValue != animationValue ||
            oldDelegate.amplitude != amplitude ||
            oldDelegate.isActive != isActive ||
-           oldDelegate.particles.length != particles.length;
+           oldDelegate.particles.length != particles.length || // Comparar tamanho é mais eficiente
+           oldDelegate.particles != particles; // Comparar referência
   }
 }
 
