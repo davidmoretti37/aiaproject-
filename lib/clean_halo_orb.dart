@@ -9,6 +9,7 @@ import 'widgets/aia_video_player.dart';
 import 'widgets/bottom_navigation.dart';
 import 'screens/featured_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/reminders_screen.dart';
 import 'services/openai_realtime_service.dart';
 import 'services/audio_service.dart';
 import 'dart:async';
@@ -427,9 +428,11 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
         );
         break;
       case 2: // Reminders
-        setState(() {
-          _showReminderWidget = !_showReminderWidget;
-        });
+        print('⏰ Navegando para tela de lembretes');
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const RemindersScreen()),
+        );
         break;
       case 3: // Settings
         Navigator.push(

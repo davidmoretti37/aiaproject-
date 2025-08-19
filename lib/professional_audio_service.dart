@@ -48,7 +48,7 @@ class ProfessionalAudioService {
   String _partialTranscription = '';
   
   // Configuration
-  static const String _serverUrl = 'https://cart-clara-cadillac-violation.trycloudflare.com';
+  static const String _serverUrl = 'https://furthermore-enjoying-speeds-integral.trycloudflare.com';
   static const int _sampleRate = 16000;
 
   /// Initialize the professional audio system

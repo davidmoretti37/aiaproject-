@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class GoogleOAuthService {
-  static const String baseUrl = 'https://cart-clara-cadillac-violation.trycloudflare.com';
+  static const String baseUrl = 'https://furthermore-enjoying-speeds-integral.trycloudflare.com';
   static const String _sessionKey = 'google_oauth_session';
   static const String _authStatusKey = 'google_auth_status';
   

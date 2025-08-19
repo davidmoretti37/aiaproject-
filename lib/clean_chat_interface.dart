@@ -9,6 +9,7 @@ import 'widgets/reminder_test_widget.dart';
 import 'widgets/bottom_navigation.dart';
 import 'screens/featured_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/reminders_screen.dart';
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -429,9 +430,13 @@ class _CleanChatInterfaceState extends State<CleanChatInterface>
         );
         break;
       case 2: // Reminders
-        setState(() {
-          _showReminderTest = !_showReminderTest;
-        });
+        print('⏰ Navegando para tela de lembretes do chat');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const RemindersScreen(),
+          ),
+        );
         break;
       case 3: // Settings
         Navigator.push(

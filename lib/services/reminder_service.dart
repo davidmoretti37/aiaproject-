@@ -1,8 +1,12 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/reminder_model.dart';
+import 'integrated_auth_service.dart';
 
 class ReminderService {
   static final _supabase = Supabase.instance.client;
+  static const String backendUrl = 'http://localhost:8000';
 
   // Buscar todos os reminders do usuário logado
   static Future<List<ReminderModel>> getUserReminders() async {
@@ -170,4 +174,110 @@ class ReminderService {
       throw Exception('Falha ao carregar reminders vencidos: $e');
     }
   }
+
+  // === MÉTODOS DE INTEGRAÇÃO COM BACKEND AIA ===
+  
+  /// Cria um lembrete via backend AIA (linguagem natural)
+  static Future<bool> createReminderViaAI({
+    required String eventName,
+    String timeExpression = "em 1 hora",
+  }) async {
+    try {
+      if (!IntegratedAuthService.isSignedIn()) {
+        throw Exception('Usuário não está logado');
+      }
+
+      final userId = IntegratedAuthService.getUserId();
+      if (userId == null) {
+        throw Exception('Não foi possível obter ID do usuário');
+      }
+
+      print('🤖 Criando lembrete via AIA: "$eventName" $timeExpression');
+
+      // Usar o endpoint de chat para criar lembrete via AIA
+      final message = 'Me lembre de $eventName $timeExpression';
+      
+      final response = await http.post(
+        Uri.parse('$backendUrl/chat'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'message': message,
+          'user_id': userId,
+          'session_id': userId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        if (data['success'] == true) {
+          print('✅ Lembrete criado com sucesso via AIA!');
+          print('   Resposta: ${data['response']}');
+          return true;
+        } else {
+          print('❌ Falha ao criar lembrete: ${data['response']}');
+          return false;
+        }
+      } else {
+        print('❌ Erro HTTP ao criar lembrete: ${response.statusCode}');
+        return false;
+      }
+      
+    } catch (e) {
+      print('❌ Erro ao criar lembrete via AIA: $e');
+      return false;
+    }
+  }
+
+  /// Lista lembretes via comando de chat AIA
+  static Future<String?> listRemindersViaAI() async {
+    try {
+      if (!IntegratedAuthService.isSignedIn()) {
+        throw Exception('Usuário não está logado');
+      }
+
+      final userId = IntegratedAuthService.getUserId();
+      if (userId == null) {
+        throw Exception('Não foi possível obter ID do usuário');
+      }
+
+      print('📋 Listando lembretes via AIA');
+
+      final response = await http.post(
+        Uri.parse('$backendUrl/chat'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'message': 'Lista meus lembretes ativos',
+          'user_id': userId,
+          'session_id': userId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['response'];
+      }
+      
+      return null;
+    } catch (e) {
+      print('❌ Erro ao listar lembretes via AIA: $e');
+      return null;
+    }
+  }
+
+  /// Testa conexão com o backend AIA
+  static Future<bool> testBackendConnection() async {
+    try {
+      final response = await http.get(Uri.parse('$backendUrl/health'));
+      return response.statusCode == 200;
+    } catch (e) {
+      print('❌ Erro ao testar conexão com backend: $e');
+      return false;
+    }
+  }
+
 }

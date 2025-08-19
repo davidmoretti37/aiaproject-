@@ -49,17 +49,8 @@ class _ReminderCardState extends State<ReminderCard>
   }
 
   Color _getStatusColor() {
-    if (widget.reminder.isOverdue) {
-      return Colors.red;
-    } else if (widget.reminder.isUpcoming) {
-      return Colors.orange;
-    } else if (widget.reminder.isCompleted) {
-      return Colors.green;
-    } else if (widget.reminder.isActive) {
-      return Colors.blue;
-    } else {
-      return Colors.grey;
-    }
+    // Cor neutra para todos os status - como uma notificação simples
+    return Colors.white.withOpacity(0.6);
   }
 
   IconData _getStatusIcon() {
@@ -257,15 +248,22 @@ class _ReminderCardState extends State<ReminderCard>
             child: Container(
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(16),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Colors.white.withOpacity(0.12),
+                    Colors.white.withOpacity(0.08),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: _getStatusColor().withOpacity(0.3),
-                  width: 1.5,
+                  color: Colors.white.withOpacity(0.15),
+                  width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: _getStatusColor().withOpacity(0.1),
+                    color: Colors.black.withOpacity(0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -275,7 +273,7 @@ class _ReminderCardState extends State<ReminderCard>
                 children: [
                   // Main Content
                   Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -284,89 +282,89 @@ class _ReminderCardState extends State<ReminderCard>
                           children: [
                             // Status Icon
                             Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: _getStatusColor().withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.white.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.15),
+                                  width: 1,
+                                ),
                               ),
                               child: Icon(
-                                _getStatusIcon(),
-                                color: _getStatusColor(),
-                                size: 20,
+                                Icons.notifications_outlined,
+                                color: Colors.white.withOpacity(0.7),
+                                size: 22,
                               ),
                             ),
                             
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 16),
                             
                             // Event Name
                             Expanded(
-                              child: Text(
-                                widget.reminder.eventName,
-                                style: GoogleFonts.inter(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    widget.reminder.eventName,
+                                    style: GoogleFonts.inter(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.2,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    widget.reminder.formattedDateTime,
+                                    style: GoogleFonts.inter(
+                                      color: Colors.white70,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             
-                            // Status Badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _getStatusColor().withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: _getStatusColor().withOpacity(0.5),
-                                ),
-                              ),
-                              child: Text(
-                                _getStatusText(),
-                                style: GoogleFonts.inter(
-                                  color: _getStatusColor(),
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
+                            // Status Badge - removido para ficar mais limpo
                           ],
                         ),
                         
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                         
                         // Time Info
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.access_time,
-                              color: Colors.white60,
-                              size: 16,
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.1),
                             ),
-                            const SizedBox(width: 6),
-                            Text(
-                              widget.reminder.formattedDateTime,
-                              style: GoogleFonts.inter(
-                                color: Colors.white70,
-                                fontSize: 14,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.schedule,
+                                color: Colors.white.withOpacity(0.6),
+                                size: 18,
                               ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              widget.reminder.formattedReminderTime,
-                              style: GoogleFonts.inter(
-                                color: widget.reminder.isOverdue 
-                                    ? Colors.red 
-                                    : Colors.white60,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  widget.reminder.formattedReminderTime,
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ],
                     ),
@@ -376,11 +374,17 @@ class _ReminderCardState extends State<ReminderCard>
                   if (_isExpanded) ...[
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.02),
+                        color: Colors.white.withOpacity(0.05),
                         borderRadius: const BorderRadius.vertical(
-                          bottom: Radius.circular(16),
+                          bottom: Radius.circular(20),
+                        ),
+                        border: Border(
+                          top: BorderSide(
+                            color: Colors.white.withOpacity(0.1),
+                            width: 1,
+                          ),
                         ),
                       ),
                       child: Column(
@@ -390,47 +394,60 @@ class _ReminderCardState extends State<ReminderCard>
                           if (widget.reminder.leadTimeDays > 0 ||
                               widget.reminder.leadTimeMinutes > 0 ||
                               widget.reminder.leadTimeSeconds > 0) ...[
-                            Text(
-                              'Lead Time:',
-                              style: GoogleFonts.inter(
-                                color: Colors.white60,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _formatLeadTime(),
-                              style: GoogleFonts.inter(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.timer,
+                                  color: Colors.blue.withOpacity(0.7),
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Lead Time: ${_formatLeadTime()}',
+                                  style: GoogleFonts.inter(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 12),
                           ],
                           
                           // Created Date
-                          Text(
-                            'Created: ${_formatDate(widget.reminder.createdAt)}',
-                            style: GoogleFonts.inter(
-                              color: Colors.white.withOpacity(0.5),
-                              fontSize: 12,
-                            ),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_today,
+                                color: Colors.white.withOpacity(0.6),
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Created: ${_formatDate(widget.reminder.createdAt)}',
+                                style: GoogleFonts.inter(
+                                  color: Colors.white.withOpacity(0.7),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
                           
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 16),
                           
                           // Action Buttons
                           Row(
                             children: [
                               if (widget.reminder.isActive) ...[
                                 _buildActionButton(
-                                  icon: Icons.check,
+                                  icon: Icons.check_circle,
                                   label: 'Complete',
                                   color: Colors.green,
                                   onTap: () => widget.onStatusChanged('completed'),
                                 ),
-                                const SizedBox(width: 8),
+                                const SizedBox(width: 12),
                                 _buildActionButton(
                                   icon: Icons.cancel,
                                   label: 'Cancel',
@@ -447,7 +464,7 @@ class _ReminderCardState extends State<ReminderCard>
                               ],
                               const Spacer(),
                               _buildActionButton(
-                                icon: Icons.delete,
+                                icon: Icons.delete_outline,
                                 label: 'Delete',
                                 color: Colors.red,
                                 onTap: _showDeleteConfirmation,
@@ -473,35 +490,40 @@ class _ReminderCardState extends State<ReminderCard>
     required Color color,
     required VoidCallback onTap,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: color.withOpacity(0.3),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: color.withOpacity(0.4),
+              width: 1.5,
+            ),
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: color,
-              size: 14,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: GoogleFonts.inter(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
                 color: color,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
+                size: 16,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  color: color,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
