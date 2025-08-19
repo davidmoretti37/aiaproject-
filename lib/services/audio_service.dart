@@ -11,6 +11,9 @@ class AudioService {
   static MediaStreamTrack? _audioTrack;
   static bool _isCapturing = false;
   static bool _isInitialized = false;
+  
+  // Callback para nível de som
+  static void Function(double)? _onSoundLevelChange;
 
   static bool get isCapturing => _isCapturing;
 
@@ -116,20 +119,23 @@ class AudioService {
     }
   }
 
-  static Future<bool> iniciarCapturaDeAudio(void Function(List<int>) onAudioData) async {
+  static Future<bool> iniciarCapturaDeAudio(void Function(List<int>) onAudioData, {void Function(double)? onSoundLevel}) async {
     try {
       if (_isCapturing) {
         debugPrint('[AudioService] Já está capturando áudio');
         return true;
       }
 
+      // Registrar callback de nível de som se fornecido
+      _onSoundLevelChange = onSoundLevel;
+
       // Parar qualquer captura anterior
       await pararCapturaDeAudio();
 
       debugPrint('[AudioService] 🎤 Iniciando captura de áudio - verificando permissões primeiro...');
       
-      // Configurar sessão de áudio para background
-      await _configureBackgroundAudioSession();
+      // Configurar sessão de áudio para alto-falante principal
+      await _configureMainSpeakerAudioSession();
       
       // Ativar wakelock para manter o app ativo
       await _enableWakelock();
@@ -143,8 +149,8 @@ class AudioService {
       
       debugPrint('[AudioService] ✅ Permissão concedida - iniciando WebRTC...');
       
-      // Usar constraints otimizadas para melhor qualidade e volume
-      final mediaConstraints = getOptimizedAudioConstraints();
+      // Usar constraints otimizadas para alto-falante principal
+      final mediaConstraints = getOptimizedAudioConstraintsForSpeaker();
 
       _localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
       
@@ -161,6 +167,9 @@ class AudioService {
       
       _audioTrack = audioTracks.first;
       _audioTrack!.enabled = true;
+      
+      // Iniciar monitoramento de nível de som
+      _startSoundLevelMonitoring();
       
       debugPrint('[AudioService] Captura de áudio iniciada com sucesso');
       _isCapturing = true;
@@ -180,6 +189,23 @@ class AudioService {
     }
   }
 
+  // Monitoramento de nível de som
+  static Timer? _soundLevelTimer;
+  static void _startSoundLevelMonitoring() {
+    _soundLevelTimer?.cancel();
+    
+    if (_onSoundLevelChange != null && _localStream != null) {
+      _soundLevelTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+        if (_localStream != null && _isCapturing) {
+          // Simular nível de som baseado em atividade
+          // Em produção, você usaria um analisador de áudio real
+          final randomLevel = 0.3 + (DateTime.now().millisecondsSinceEpoch % 100) / 200;
+          _onSoundLevelChange?.call(randomLevel.clamp(0.0, 1.0));
+        }
+      });
+    }
+  }
+
   static Future<void> pararCapturaDeAudio() async {
     if (!_isCapturing && _localStream == null) {
       return;
@@ -187,6 +213,11 @@ class AudioService {
 
     debugPrint('[AudioService] Parando captura de áudio');
     _isCapturing = false;
+    
+    // Parar monitoramento de som
+    _soundLevelTimer?.cancel();
+    _soundLevelTimer = null;
+    _onSoundLevelChange = null;
 
     try {
       if (_audioTrack != null) {
@@ -292,20 +323,16 @@ class AudioService {
   /// Aumenta o volume do sistema para reprodução de áudio
   static void maximizeSystemVolume() {
     try {
-      debugPrint('[AudioService] 🔊 Configurando categoria de áudio para reprodução');
-      // No iOS, o volume é controlado pelo sistema
-      // A categoria de áudio já é configurada automaticamente pelo WebRTC
-      
-      // Tentar configurar o volume do sistema para máximo
-      debugPrint('[AudioService] 🔊 IMPORTANTE: Aumente o volume do iPhone usando os botões físicos!');
-      debugPrint('[AudioService] 🔊 Ou use o Control Center para ajustar o volume');
+      debugPrint('[AudioService] 🔊 Configurando categoria de áudio para reprodução no alto-falante principal');
+      // No iOS, isso já é configurado pela sessão de áudio
+      debugPrint('[AudioService] 🔊 Som configurado para sair no alto-falante principal');
     } catch (e) {
       debugPrint('[AudioService] Erro ao configurar categoria de áudio: $e');
     }
   }
   
-  /// Configura as constraints de áudio para melhor qualidade e volume
-  static Map<String, dynamic> getOptimizedAudioConstraints() {
+  /// Configura as constraints de áudio otimizadas para alto-falante principal
+  static Map<String, dynamic> getOptimizedAudioConstraintsForSpeaker() {
     return {
       'audio': {
         'echoCancellation': true,
@@ -328,26 +355,32 @@ class AudioService {
     };
   }
 
-  /// Configura a sessão de áudio para reprodução em background
-  static Future<void> _configureBackgroundAudioSession() async {
+  /// Configura as constraints de áudio para melhor qualidade e volume
+  static Map<String, dynamic> getOptimizedAudioConstraints() {
+    return getOptimizedAudioConstraintsForSpeaker();
+  }
+
+  /// Configura a sessão de áudio para alto-falante principal (não para chamada)
+  static Future<void> _configureMainSpeakerAudioSession() async {
     try {
-      debugPrint('[AudioService] 🎵 Configurando sessão de áudio para background...');
+      debugPrint('[AudioService] 🔊 Configurando sessão de áudio para ALTO-FALANTE PRINCIPAL...');
       
       final session = await AudioSession.instance;
       
-      // Configurar para reprodução de áudio em background
+      // Configuração específica para alto-falante principal (não para chamada)
       final audioConfig = AudioSessionConfiguration(
         avAudioSessionCategory: AVAudioSessionCategory.playAndRecord,
         avAudioSessionCategoryOptions: AVAudioSessionCategoryOptions.defaultToSpeaker |
             AVAudioSessionCategoryOptions.allowBluetooth |
-            AVAudioSessionCategoryOptions.allowAirPlay,
-        avAudioSessionMode: AVAudioSessionMode.voiceChat,
+            AVAudioSessionCategoryOptions.allowAirPlay |
+            AVAudioSessionCategoryOptions.mixWithOthers, // Permite mixar com outros sons
+        avAudioSessionMode: AVAudioSessionMode.videoChat, // MUDANÇA CRÍTICA: videoChat em vez de voiceChat
         avAudioSessionRouteSharingPolicy: AVAudioSessionRouteSharingPolicy.defaultPolicy,
-        avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.none,
+        avAudioSessionSetActiveOptions: AVAudioSessionSetActiveOptions.notifyOthersOnDeactivation,
         androidAudioAttributes: const AndroidAudioAttributes(
           contentType: AndroidAudioContentType.speech,
           flags: AndroidAudioFlags.audibilityEnforced,
-          usage: AndroidAudioUsage.voiceCommunication,
+          usage: AndroidAudioUsage.media, // MUDANÇA: media em vez de voiceCommunication
         ),
         androidAudioFocusGainType: AndroidAudioFocusGainType.gain,
         androidWillPauseWhenDucked: false,
@@ -358,14 +391,20 @@ class AudioService {
       // Ativar a sessão
       await session.setActive(true);
       
-      debugPrint('[AudioService] ✅ Sessão de áudio configurada para background');
+      debugPrint('[AudioService] ✅ Sessão de áudio configurada para ALTO-FALANTE PRINCIPAL');
       debugPrint('[AudioService] 📱 Categoria: playAndRecord');
-      debugPrint('[AudioService] 🔊 Modo: voiceChat');
-      debugPrint('[AudioService] 🎯 Opções: defaultToSpeaker, allowBluetooth');
+      debugPrint('[AudioService] 🔊 Modo: videoChat (força alto-falante principal)');
+      debugPrint('[AudioService] 🎯 Opções: defaultToSpeaker, allowBluetooth, mixWithOthers');
       
     } catch (e) {
       debugPrint('[AudioService] ❌ Erro ao configurar sessão de áudio: $e');
     }
+  }
+
+  /// Configura a sessão de áudio para reprodução em background
+  static Future<void> _configureBackgroundAudioSession() async {
+    // Usa a mesma configuração do alto-falante principal
+    await _configureMainSpeakerAudioSession();
   }
 
   /// Ativa o wakelock para manter o app ativo em background
@@ -403,10 +442,10 @@ class AudioService {
     try {
       debugPrint('[AudioService] 🎵 Habilitando reprodução de áudio em background...');
       
-      await _configureBackgroundAudioSession();
+      await _configureMainSpeakerAudioSession();
       await _enableWakelock();
       
-      debugPrint('[AudioService] ✅ Background audio habilitado');
+      debugPrint('[AudioService] ✅ Background audio habilitado com alto-falante principal');
       
     } catch (e) {
       debugPrint('[AudioService] ❌ Erro ao habilitar background audio: $e');
