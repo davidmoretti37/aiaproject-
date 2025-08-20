@@ -12,6 +12,7 @@ import 'screens/settings_screen.dart';
 import 'screens/reminders_screen.dart';
 import 'services/openai_realtime_service.dart';
 import 'services/audio_service.dart';
+import 'activate_voice_ai_screen.dart';
 import 'dart:async';
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -592,7 +593,22 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                             size: 24,
                           ),
                           onPressed: () {
-                            Navigator.of(context).pop();
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder: (context) => ActivateVoiceAIScreen(
+                                  onActivate: () {
+                                    Navigator.of(context).pushReplacement(
+                                      MaterialPageRoute(
+                                        builder: (context) => CleanHaloOrb(
+                                          onInteractionComplete: widget.onInteractionComplete,
+                                          sessionId: widget.sessionId,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            );
                           },
                           tooltip: 'Voltar',
                         ),
@@ -714,46 +730,6 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                           );
                         },
                       ),
-                      if (_currentState == OrbState.idle && !_hasSpokenOnce)
-                        Positioned(
-                          bottom: 24,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 12,
-                              horizontal: 26,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.92),
-                              borderRadius: BorderRadius.circular(32),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
-                                  blurRadius: 12,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.mic,
-                                  color: const Color(0xFF3DB6D4),
-                                  size: 22,
-                                ),
-                                SizedBox(width: 10),
-                                Text(
-                                  "Tap to Speak",
-                                  style: GoogleFonts.inter(
-                                    color: Colors.blue[900],
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
                     ],
                   ),
                 ),
@@ -767,7 +743,24 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
         child: AIABottomNavigation(
           isMuted: _isMuted,
           onChatTap: widget.onInteractionComplete,
-          onMuteTap: _toggleMute,
+          onMuteTap: () {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(
+                builder: (context) => ActivateVoiceAIScreen(
+                  onActivate: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (context) => CleanHaloOrb(
+                          onInteractionComplete: widget.onInteractionComplete,
+                          sessionId: widget.sessionId,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            );
+          },
         ),
       ),
     );

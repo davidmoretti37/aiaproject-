@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'widgets/aia_video_player.dart';
+import 'clean_google_login.dart';
 
 class ActivateVoiceAIScreen extends StatelessWidget {
   const ActivateVoiceAIScreen({Key? key, required this.onActivate}) : super(key: key);
@@ -31,7 +32,14 @@ class ActivateVoiceAIScreen extends StatelessWidget {
                         size: 24,
                       ),
                       onPressed: () {
-                        Navigator.of(context).pop();
+                        Navigator.of(context).pushReplacement(
+                          MaterialPageRoute(
+                            builder: (context) => CleanGoogleLogin(
+                              onLoginSuccess: () {},
+                              sessionId: '',
+                            ),
+                          ),
+                        );
                       },
                       tooltip: 'Voltar',
                     ),
@@ -60,17 +68,17 @@ class ActivateVoiceAIScreen extends StatelessWidget {
                         Text(
                           "Your AI Voice Assistent Ready!",
                           style: GoogleFonts.inter(
-                            color: const Color(0xDD131221),
+                            color: const Color(0xDD15142B),
                             fontSize: 14,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w400,
                           ),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 12),
                         Text(
                           "Discover The Future\nOf Chat With AI",
                           style: GoogleFonts.inter(
-                            color: const Color(0xDD131221),
+                            color: const Color(0xDD15142B),
                             fontSize: 26,
                             fontWeight: FontWeight.w600,
                           ),
@@ -101,7 +109,7 @@ class ActivateVoiceAIScreen extends StatelessWidget {
                           borderRadius: BorderRadius.circular(32),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.09),
+                              color: Colors.black.withOpacity(0.1),
                               blurRadius: 12,
                               offset: Offset(0, 4),
                             ),
@@ -120,7 +128,7 @@ class ActivateVoiceAIScreen extends StatelessWidget {
                                 isSpeaking: false,
                               ),
                             ),
-                            const SizedBox(width: 12),
+                            const SizedBox(width: 8),
                             Text(
                               "Activate Voice AI",
                               style: GoogleFonts.inter(
