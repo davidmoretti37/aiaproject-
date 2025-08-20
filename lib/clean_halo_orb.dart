@@ -76,6 +76,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   bool _isAISpeaking = false;
   String _currentIAResponseText = ''; // Texto transcrito da IA
   String _currentUserInputText = ''; // Texto do usuário (não exibido)
+  String _previousUserInputText = ''; // Último texto processado do usuário (fallback local)
   
   // Timer para atualização suave do nível de som
   Timer? _soundLevelTimer;
@@ -156,7 +157,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
             _isUserSpeaking = false; // Usuário parou
             _currentSoundLevel = 0.0;
             _realSoundLevel = 0.0;
-            // Não muda o estado geral aqui
+            _currentState = OrbState.idle;
           });
         }
       },
@@ -168,7 +169,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
             setState(() {
               _isUserSpeaking = true; // Usuário começou a falar
               _isAISpeaking = false;  // IA não está falando
-              // O estado visual (_currentState) será controlado pela lógica de transição
+              _currentState = OrbState.listening;
             });
           }
         } else if (val == 'notListening' || val == 'done') { // Corrigido: era isNotListeninging
@@ -178,6 +179,12 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
               _currentSoundLevel = 0.0;
               _realSoundLevel = 0.0;
             });
+          }
+          
+          // Processa o texto se houver
+          if (_currentUserInputText.isNotEmpty && _currentUserInputText != _previousUserInputText) {
+            _previousUserInputText = _currentUserInputText;
+            _processInput(_currentUserInputText);
           }
         }
       },
@@ -216,7 +223,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
     
     setState(() {
       _isRealtimeConnecting = true; // Corrigido: era _isRealtimeConnectong
-      // _currentState = OrbState.processing; // Pode ser usado se quiser um estado de "conectando"
+      _currentState = OrbState.processing; // Começa como processing até conectar
     });
 
     try {
@@ -235,7 +242,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
             setState(() {
               _isAISpeaking = true;     // IA está falando
               _isUserSpeaking = false;  // Usuário não está falando
-              // _currentState = OrbState.speaking; // O AnimatedAIInterface controla a UI com base em _isAISpeaking
+              _currentState = OrbState.speaking; // O AnimatedAIInterface controla a UI com base em _isAISpeaking
               _currentIAResponseText = ''; // Limpar texto anterior
               _currentSoundLevel = 0.0; // Resetar som
               _realSoundLevel = 0.0;    // Resetar som
@@ -246,18 +253,14 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
         // Callback para quando o áudio da IA TERMINA
         onAudioResponseEnd: () { 
           debugPrint('🔇 [Callback] onAudioResponseEnd - ÁUDIO da IA TERMINOU');
-          // Apenas log por enquanto, o estado principal é gerido por onConversationDone
+          // Apenas log por enquanto
         },
         
         // Callback para os dados de áudio brutos (NÃO atualiza estado de UI aqui)
-        // Mantido apenas se for necessário reproduzir o áudio diretamente
         onAudioResponse: (audioData) {
-          // Este callback ainda é útil se você estiver reproduzindo o áudio diretamente
-          // ou fazendo algum processamento específico com os bytes.
-          // A transição visual já foi feita no onAudioResponseStart.
+          // Este callback ainda é útil para atualizar o nível de som em tempo real
           debugPrint('🔊 [Callback] onAudioResponse - Bytes de áudio recebidos: ${audioData.length}');
-          // ... (lógica de reprodução de áudio, se houver) ...
-          // >>> NÃO CHAME setState AQUI PARA MUDAR _isAISpeaking ou _currentState <<<
+          // ... (lógica de análise de áudio para _currentSoundLevel, se necessário) ...
         },
 
         // Callback para quando a conversa inteira (resposta + áudio) termina
@@ -265,8 +268,8 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
           debugPrint('✅ [Callback] onConversationDone - Interação da IA COMPLETAMENTE terminada - Voltando para IDLE');
           if (mounted) {
             setState(() {
-              _isAISpeaking = false;
-              _currentState = OrbState.idle; // Volta ao estado ocioso
+              _isAISpeaking = false; // IA parou de falar
+              _currentState = OrbState.idle; // O estado idle pode ser definido aqui
               _hasInteracted = true;
               // _isUserSpeaking já deve estar false
             });
@@ -281,8 +284,8 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
               _isRealtimeConnecting = false; // Corrigido: era _isRealtimeConnectong
               _isRealtimeConnected = true;
               _currentState = OrbState.listening; // Ou idle, dependendo da UX desejada
-              _isUserSpeaking = true;  // <<-- Essencial: Usuário pode falar
-              _isAISpeaking = false;   // <<-- Essencial: IA não está falando
+              _isUserSpeaking = true;  // Usuário pode falar (esfera)
+              _isAISpeaking = false;   // IA não está falando
               _currentIAResponseText = ''; // Limpar texto da IA
             });
             _startRealtimeSoundSimulation();
@@ -321,6 +324,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   }
 
   Future<void> _stopRealtimeConversation() async {
+    debugPrint('[CleanHaloOrb] Solicitando encerramento da conversa Realtime...');
     _stopRealtimeSoundSimulation(); // Parar simulação de som
     
     if (_openAIService != null) {
@@ -345,6 +349,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   }
 
   Future<void> _startLocalListening() async {
+    // Pode ser removido se não usar mais speech_to_text local
     if (_speech.isNotListening) { // Corrigido: era isNotListeninging
       if (mounted) {
         setState(() {
@@ -583,11 +588,8 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                               // E o usuário estiver falando (esfera visível), para a escuta
                               debugPrint('✋ Parando escuta do usuário...');
                               // A API Realtime com server_vad deve parar de escutar
-                              // Podemos enviar um sinal para parar, ou simplesmente esperar
-                              // o server_vad detectar o silêncio.
-                              // Por enquanto, confiamos no server_vad.
-                              // Se precisar de uma ação explícita, pode ser algo como:
-                              // _sendStopListeningSignal(); // Função hipotética
+                              // Por enquanto, confiamos no server_vad e no próprio fluxo da API.
+                              // Se precisar de uma ação explícita, seria aqui.
                               _stopListening(); // Se ainda estiver usando speech_to_text local
                             } else if (_isAISpeaking) {
                               // E a IA estiver falando (faixa visível), interrompe a fala da IA
@@ -598,11 +600,10 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                               // A melhor abordagem é deixar a API terminar.
                               // Podemos atualizar o estado localmente para dar feedback imediato.
                               // O onConversationDone da API ainda será chamado posteriormente.
-                              await _flutterTts.stop(); // Interrompe o TTS local
                               if (mounted) {
                                 setState(() {
                                   _isAISpeaking = false;
-                                  _currentState = OrbState.idle; // Volta ao idle imediatamente
+                                  // _currentState = OrbState.idle; // Ou outro estado apropriado
                                 });
                               }
                             } else {
@@ -649,7 +650,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                 ),
                 
                 // Response Text (quando IA responde)
-                if (_currentResponse.isNotEmpty && _isAISpeaking)
+                if (_currentResponse.isNotEmpty && _isAISpeaking) // Isso pode ser confuso agora
                   Positioned(
                     bottom: 160,
                     left: 40,
