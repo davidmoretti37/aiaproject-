@@ -233,7 +233,8 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
               _currentState = OrbState.speaking;
               needsSetState = true;
             }
-            if (_aiTranscriptLines.isEmpty || _aiTranscriptLines.last.endsWith('\n')) {
+            if (_aiTranscriptLines.isEmpty ||
+                _aiTranscriptLines.last.endsWith('\n')) {
               _aiTranscriptLines.add(delta);
               needsSetState = true;
             } else {
@@ -292,7 +293,9 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
           });
         },
         onAIStartSpeaking: () {
-          print('[AIA LOG] Evento OpenAI: IA começou a falar (setando speaking)');
+          print(
+            '[AIA LOG] Evento OpenAI: IA começou a falar (setando speaking)',
+          );
           _listeningDelayTimer?.cancel();
           _aiStopToIdleTimer?.cancel();
           setState(() {
@@ -303,7 +306,9 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
           });
         },
         onAIStopSpeaking: () {
-          print('[AIA LOG] Evento OpenAI: IA parou de falar (aguardando possível input do usuário antes de idle)');
+          print(
+            '[AIA LOG] Evento OpenAI: IA parou de falar (aguardando possível input do usuário antes de idle)',
+          );
           _aiStopToIdleTimer?.cancel();
           _aiStopToIdleTimer = Timer(const Duration(milliseconds: 1200), () {
             if (!mounted) return;
@@ -359,7 +364,9 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
 
   Future<void> _startListening() async {
     // Método legado mantido para compatibilidade, mas agora usa Realtime
-    debugPrint('[AIA LOG] _startListening chamado: iniciando escuta imediatamente');
+    debugPrint(
+      '[AIA LOG] _startListening chamado: iniciando escuta imediatamente',
+    );
     await _startRealtimeConversation();
   }
 
@@ -560,7 +567,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEAEBEE),
+      backgroundColor: const Color(0xFFF5F5F5),
       body: AnimatedBuilder(
         animation: _fadeInOpacity,
         builder: (context, child) {
@@ -579,7 +586,11 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                       Padding(
                         padding: const EdgeInsets.only(left: 24),
                         child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Color(0xDD3DB6D4), size: 24),
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: Color(0xDD3DB6D4),
+                            size: 24,
+                          ),
                           onPressed: () {
                             Navigator.of(context).pop();
                           },
@@ -600,31 +611,38 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                 ),
                 // Main Orb (clean, no debugging visuals)
                 // Transcrição da IA no topo
-                if (_currentState == OrbState.speaking && _aiTranscriptLines.isNotEmpty)
+                if (_currentState == OrbState.speaking &&
+                    _aiTranscriptLines.isNotEmpty)
                   Positioned(
-                    top: 200,
+                    top: 170,
                     left: 0,
                     right: 0,
                     child: SizedBox(
                       height: 200,
-                      child: ListView.builder(
-                        controller: _aiTranscriptScrollController,
-                        itemCount: _aiTranscriptLines.length,
-                        shrinkWrap: true,
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 2),
-                            child: Text(
-                              _aiTranscriptLines[index],
-                              style: GoogleFonts.inter(
-                                color: const Color(0xFF444648),
-                                fontSize: 20,
-                                fontWeight: FontWeight.w400,
+                      child: Align(
+                        // Adicionado para centralizar verticalmente
+                        alignment: Alignment.center,
+                        child: ListView.builder(
+                          controller: _aiTranscriptScrollController,
+                          itemCount: _aiTranscriptLines.length,
+                          shrinkWrap: true,
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 2),
+                              child: Text(
+                                _aiTranscriptLines[index],
+                                textAlign: TextAlign
+                                    .center, // Adicionado para centralizar horizontalmente
+                                style: GoogleFonts.inter(
+                                  color: const Color(0xFF3DB6D4),
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w400,
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ),
@@ -718,7 +736,11 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.mic, color: const Color(0xFF3DB6D4), size: 22),
+                                Icon(
+                                  Icons.mic,
+                                  color: const Color(0xFF3DB6D4),
+                                  size: 22,
+                                ),
                                 SizedBox(width: 10),
                                 Text(
                                   "Tap to Speak",
