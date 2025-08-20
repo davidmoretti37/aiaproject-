@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'services/simple_auth_service.dart';
+import 'activate_voice_ai_screen.dart';
+import 'clean_halo_orb.dart';
 
 class CleanGoogleLogin extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -113,10 +115,25 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
     setState(() {
       _statusMessage = 'Continuing without Google account...';
     });
-    
-    Future.delayed(const Duration(milliseconds: 1000), () {
+
+    Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
-        widget.onLoginSuccess();
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => ActivateVoiceAIScreen(
+              onActivate: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => CleanHaloOrb(
+                      onInteractionComplete: widget.onLoginSuccess,
+                      sessionId: widget.sessionId,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
       }
     });
   }
