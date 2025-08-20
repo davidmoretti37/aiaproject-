@@ -227,26 +227,30 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
       _openAIService = OpenAIRealtimeService(
         userName: userId, // ID real do usuário logado
         onAITranscriptDelta: (String delta) {
-          setState(() {
-            // Força o estado para speaking ao receber o primeiro delta
+          Future.delayed(const Duration(milliseconds: 150), () {
+            bool needsSetState = false;
             if (_currentState != OrbState.speaking) {
               _currentState = OrbState.speaking;
+              needsSetState = true;
             }
             if (_aiTranscriptLines.isEmpty || _aiTranscriptLines.last.endsWith('\n')) {
               _aiTranscriptLines.add(delta);
+              needsSetState = true;
             } else {
               _aiTranscriptLines[_aiTranscriptLines.length - 1] += delta;
+              needsSetState = true;
             }
-          });
-          // Rolagem automática para o final
-          Future.delayed(const Duration(milliseconds: 50), () {
-            if (_aiTranscriptScrollController.hasClients) {
-              _aiTranscriptScrollController.animateTo(
-                _aiTranscriptScrollController.position.maxScrollExtent,
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-              );
-            }
+            if (needsSetState) setState(() {});
+            // Rolagem automática para o final
+            Future.delayed(const Duration(milliseconds: 50), () {
+              if (_aiTranscriptScrollController.hasClients) {
+                _aiTranscriptScrollController.animateTo(
+                  _aiTranscriptScrollController.position.maxScrollExtent,
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeOut,
+                );
+              }
+            });
           });
         },
         onAudioResponse: (audioData) {
@@ -597,30 +601,50 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                 // Transcrição da IA no topo
                 if (_currentState == OrbState.speaking && _aiTranscriptLines.isNotEmpty)
                   Positioned(
-                    top: 230,
+                    top: 200,
                     left: 0,
                     right: 0,
-                    child: SizedBox(
-                      height: 200,
-                      child: ListView.builder(
-                        controller: _aiTranscriptScrollController,
-                        itemCount: _aiTranscriptLines.length,
-                        shrinkWrap: true,
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 2),
-                            child: Text(
-                              _aiTranscriptLines[index],
-                              style: GoogleFonts.inter(
-                                color: const Color(0xFF444648),
-                                fontSize: 20,
-                                fontWeight: FontWeight.w400,
-                              ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Fade pequeno acima do texto
+                        Container(
+                          height: 10,
+                          margin: const EdgeInsets.symmetric(horizontal: 24),
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Color(0xFFEAEBEE),
+                                Colors.transparent,
+                              ],
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        ),
+                        SizedBox(
+                          height: 176,
+                          child: ListView.builder(
+                            controller: _aiTranscriptScrollController,
+                            itemCount: _aiTranscriptLines.length,
+                            shrinkWrap: true,
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            itemBuilder: (context, index) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 2),
+                                child: Text(
+                                  _aiTranscriptLines[index],
+                                  style: GoogleFonts.inter(
+                                    color: const Color(0xFF444648),
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 // Botão de configurações na extrema direita
