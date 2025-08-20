@@ -690,7 +690,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                           if (_currentState == OrbState.speaking) {
                             orbAlignment = Alignment(
                               0,
-                              1.3,
+                              1.25,
                             ); // Centraliza exatamente entre os botões
                             orbSize =
                                 120; // Ajuste para centralizar visualmente
@@ -748,10 +748,17 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
         child: AIABottomNavigation(
           isMuted: _isMuted,
           onChatTap: () {
+  // Parar todos os sistemas de voz antes de abrir o chat
+  _stopListening();
+  _stopRealtimeConversation();
+  _flutterTts.stop();
   Navigator.of(context).push(
     MaterialPageRoute(
       builder: (context) => AIAChatScreen(
-        onBackToVoice: () => Navigator.of(context).pop(),
+        onBackToVoice: () {
+          Navigator.of(context).pop();
+          _startListening();
+        },
       ),
     ),
   );
