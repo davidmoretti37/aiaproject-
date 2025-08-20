@@ -568,6 +568,36 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
             opacity: _fadeInOpacity.value,
             child: Stack(
               children: [
+                // Top bar: back button and profile image
+                Positioned(
+                  top: 70,
+                  left: 0,
+                  right: 0,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 24),
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.black87, size: 24),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          tooltip: 'Voltar',
+                        ),
+                      ),
+                      const Spacer(),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 28),
+                        child: CircleAvatar(
+                          radius: 20,
+                          backgroundColor: Colors.transparent,
+                          backgroundImage: AssetImage('assets/profile.png'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 // Main Orb (clean, no debugging visuals)
                 // Transcrição da IA no topo
                 if (_currentState == OrbState.speaking && _aiTranscriptLines.isNotEmpty)
@@ -672,7 +702,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                           child: Container(
                             padding: const EdgeInsets.symmetric(
                               vertical: 12,
-                              horizontal: 32,
+                              horizontal: 26,
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.92),
