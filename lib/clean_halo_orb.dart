@@ -8,6 +8,7 @@ import 'ai_service.dart';
 import 'widgets/aia_video_player.dart';
 import 'widgets/bottom_navigation.dart';
 import 'screens/featured_screen.dart';
+import 'screens/aia_chat_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/reminders_screen.dart';
 import 'services/openai_realtime_service.dart';
@@ -746,7 +747,15 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
         padding: const EdgeInsets.only(bottom: 60), // Sobe os botões para cima
         child: AIABottomNavigation(
           isMuted: _isMuted,
-          onChatTap: widget.onInteractionComplete,
+          onChatTap: () {
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => AIAChatScreen(
+        onBackToVoice: () => Navigator.of(context).pop(),
+      ),
+    ),
+  );
+},
           onMuteTap: () {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(
