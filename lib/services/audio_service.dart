@@ -1,3 +1,5 @@
+// lib/services/audio_service.dart
+
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
@@ -12,9 +14,7 @@ class AudioService {
   static bool _isCapturing = false;
   static bool _isInitialized = false;
   
-  // Callback para nível de som
-  static void Function(double)? _onSoundLevelChange;
-
+  // Getter para o estado de captura
   static bool get isCapturing => _isCapturing;
 
   /// Solicita permissão de microfone usando WebRTC diretamente
@@ -119,15 +119,12 @@ class AudioService {
     }
   }
 
-  static Future<bool> iniciarCapturaDeAudio(void Function(List<int>) onAudioData, {void Function(double)? onSoundLevel}) async {
+  static Future<bool> iniciarCapturaDeAudio(Function(MediaStream) onStreamCreated) async {
     try {
       if (_isCapturing) {
         debugPrint('[AudioService] Já está capturando áudio');
         return true;
       }
-
-      // Registrar callback de nível de som se fornecido
-      _onSoundLevelChange = onSoundLevel;
 
       // Parar qualquer captura anterior
       await pararCapturaDeAudio();
@@ -135,10 +132,10 @@ class AudioService {
       debugPrint('[AudioService] 🎤 Iniciando captura de áudio - verificando permissões primeiro...');
       
       // Configurar sessão de áudio para alto-falante principal
-      await _configureMainSpeakerAudioSession();
+      await _configurarSessaoAudioParaAltoFalante();
       
       // Ativar wakelock para manter o app ativo
-      await _enableWakelock();
+      await _ativarWakelock();
       
       // AGORA solicitar permissão apenas quando realmente precisar
       final permissaoOk = await solicitarPermissaoMicrofone();
@@ -169,11 +166,12 @@ class AudioService {
       _audioTrack!.enabled = true;
       
       // Iniciar monitoramento de nível de som
-      _startSoundLevelMonitoring();
+      _iniciarMonitoramentoNivelSom();
       
       debugPrint('[AudioService] Captura de áudio iniciada com sucesso');
       _isCapturing = true;
       _isInitialized = true;
+      onStreamCreated(_localStream!);
       return true;
     } catch (e) {
       debugPrint('[AudioService] Erro ao iniciar captura de áudio via WebRTC: $e');
@@ -191,19 +189,22 @@ class AudioService {
 
   // Monitoramento de nível de som
   static Timer? _soundLevelTimer;
-  static void _startSoundLevelMonitoring() {
+  static void _iniciarMonitoramentoNivelSom() {
     _soundLevelTimer?.cancel();
     
-    if (_onSoundLevelChange != null && _localStream != null) {
-      _soundLevelTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
-        if (_localStream != null && _isCapturing) {
-          // Simular nível de som baseado em atividade
-          // Em produção, você usaria um analisador de áudio real
-          final randomLevel = 0.3 + (DateTime.now().millisecondsSinceEpoch % 100) / 200;
-          _onSoundLevelChange?.call(randomLevel.clamp(0.0, 1.0));
-        }
-      });
-    }
+    // O monitoramento real pode ser feito no callback onSoundLevelChange
+    // passado para iniciarCapturaDeAudio, ou através de um analisador de áudio
+    // dedicado. Aqui, apenas simulamos um timer básico.
+    _soundLevelTimer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
+      if (_isCapturing) {
+        // Simular nível de som baseado em atividade
+        // Em produção, você usaria um analisador de áudio real
+        // final randomLevel = 0.3 + (DateTime.now().millisecondsSinceEpoch % 100) / 200;
+        // _onSoundLevelChange?.call(randomLevel.clamp(0.0, 1.0));
+      } else {
+        timer.cancel();
+      }
+    });
   }
 
   static Future<void> pararCapturaDeAudio() async {
@@ -217,7 +218,6 @@ class AudioService {
     // Parar monitoramento de som
     _soundLevelTimer?.cancel();
     _soundLevelTimer = null;
-    _onSoundLevelChange = null;
 
     try {
       if (_audioTrack != null) {
@@ -309,19 +309,8 @@ class AudioService {
     }
   }
   
-  /// Configura o volume do áudio remoto (resposta da IA)
-  /// Nota: WebRTC não suporta controle de volume direto, o volume é controlado pelo sistema
-  static void setRemoteAudioVolume(MediaStream? remoteStream, double volume) {
-    if (remoteStream != null) {
-      debugPrint('[AudioService] 🔊 Volume solicitado: ${(volume * 100).round()}%');
-      debugPrint('[AudioService] ⚠️ WebRTC não suporta controle de volume direto - use o volume do sistema');
-      // O volume no WebRTC é controlado pelo sistema operacional
-      // Para iOS, o usuário deve usar os botões de volume físicos ou o Control Center
-    }
-  }
-  
-  /// Aumenta o volume do sistema para reprodução de áudio
-  static void maximizeSystemVolume() {
+  /// Maximiza o volume do sistema para reprodução de áudio
+  static Future<void> maximizeSystemVolume() async {
     try {
       debugPrint('[AudioService] 🔊 Configurando categoria de áudio para reprodução no alto-falante principal');
       // No iOS, isso já é configurado pela sessão de áudio
@@ -360,13 +349,8 @@ class AudioService {
     return getOptimizedAudioConstraintsForSpeaker();
   }
 
-  /// Força a saída de áudio para o alto-falante principal (público)
-  static Future<void> forceSpeakerOutput() async {
-    await _configureMainSpeakerAudioSession();
-  }
-
   /// Configura a sessão de áudio para alto-falante principal (não para chamada)
-  static Future<void> _configureMainSpeakerAudioSession() async {
+  static Future<void> _configurarSessaoAudioParaAltoFalante() async {
     try {
       debugPrint('[AudioService] 🔊 Configurando sessão de áudio para ALTO-FALANTE PRINCIPAL...');
       
@@ -406,14 +390,8 @@ class AudioService {
     }
   }
 
-  /// Configura a sessão de áudio para reprodução em background
-  static Future<void> _configureBackgroundAudioSession() async {
-    // Usa a mesma configuração do alto-falante principal
-    await _configureMainSpeakerAudioSession();
-  }
-
   /// Ativa o wakelock para manter o app ativo em background
-  static Future<void> _enableWakelock() async {
+  static Future<void> _ativarWakelock() async {
     try {
       debugPrint('[AudioService] 🔒 Ativando wakelock para background...');
       
@@ -428,7 +406,7 @@ class AudioService {
   }
 
   /// Desativa o wakelock quando não precisar mais
-  static Future<void> _disableWakelock() async {
+  static Future<void> _desativarWakelock() async {
     try {
       debugPrint('[AudioService] 🔓 Desativando wakelock...');
       
@@ -447,8 +425,8 @@ class AudioService {
     try {
       debugPrint('[AudioService] 🎵 Habilitando reprodução de áudio em background...');
       
-      await _configureMainSpeakerAudioSession();
-      await _enableWakelock();
+      await _configurarSessaoAudioParaAltoFalante();
+      await _ativarWakelock();
       
       debugPrint('[AudioService] ✅ Background audio habilitado com alto-falante principal');
       
@@ -462,7 +440,7 @@ class AudioService {
     try {
       debugPrint('[AudioService] 🔇 Desabilitando background audio...');
       
-      await _disableWakelock();
+      await _desativarWakelock();
       
       // Desativar a sessão de áudio
       final session = await AudioSession.instance;

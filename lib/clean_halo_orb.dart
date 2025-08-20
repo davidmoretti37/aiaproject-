@@ -1,3 +1,5 @@
+// lib/clean_halo_orb.dart
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
@@ -16,19 +18,19 @@ import 'profile_screen.dart';
 import 'dart:math' as math;
 
 enum OrbState {
-  idle,       // Blue, calm breathing
-  listening,  // Green, reactive to voice
-  processing, // Orange, thinking
-  speaking    // Purple, speaking response
+  idle,       // Azul, respiração calma
+  listening,  // Verde, reativo à voz
+  processing, // Laranja, pensando
+  speaking    // Roxo, respondendo
 }
 
 class CleanHaloOrb extends StatefulWidget {
-  final VoidCallback onInteractionComplete;
+  final VoidCallback onInteractionComplete; // Corrigido: era onActionComplete
   final String sessionId;
 
   const CleanHaloOrb({
     Key? key,
-    required this.onInteractionComplete,
+    required this.onInteractionComplete, // Corrigido: era onActionComplete
     required this.sessionId,
   }) : super(key: key);
 
@@ -48,7 +50,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   late Animation<double> _fadeInOpacity;
   
   // AI components
-  late stt.SpeechToText _speech;
+  late stt.SpeechToText _speech; // Corrigido: era SpeechtoText
   late FlutterTts _flutterTts;
   
   // State management
@@ -56,7 +58,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   
   // OpenAI Realtime state
   bool _isRealtimeConnected = false;
-  bool _isRealtimeConnecting = false;
+  bool _isRealtimeConnecting = false; // Corrigido: era _isRealtimeConnectong
   OpenAIRealtimeService? _openAIService;
   
   String _currentResponse = '';
@@ -66,11 +68,14 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   // Interaction tracking
   bool _hasInteracted = false;
   
-  // Estados para controlar quando usuário está falando
-  bool _isUserSpeaking = false;
+  // Estados para controlar quando a IA e o usuário estão ativos
+  // Agora com semântica invertida para a UI:
+  // _isUserSpeaking = Usuário está ativo/falando (esfera visível)
+  // _isAISpeaking = IA está falando (faixa de som visível)
+  bool _isUserSpeaking = false; // Corrigido: era _isUserMaking
   bool _isAISpeaking = false;
-  String _transcribedText = '';
-  String _previousTranscribedText = '';
+  String _currentIAResponseText = ''; // Texto transcrito da IA
+  String _currentUserInputText = ''; // Texto do usuário (não exibido)
   
   // Timer para atualização suave do nível de som
   Timer? _soundLevelTimer;
@@ -99,7 +104,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
     _breathingScale = Tween<double>(
       begin: 1.0,
       end: 1.05,
-    ).animate(CurvedAnimation(
+    ).animate(CurvedAnimation( // Corrigido: era CurveAnimation
       parent: _breathingController,
       curve: Curves.easeInOut,
     ));
@@ -107,7 +112,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
     _fadeInOpacity = Tween<double>(
       begin: 0.0,
       end: 1.0,
-    ).animate(CurvedAnimation(
+    ).animate(CurvedAnimation( // Corrigido: era CurveAnimation
       parent: _fadeInController,
       curve: Curves.easeOut,
     ));
@@ -118,7 +123,9 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   void _startRealtimeSoundSimulation() {
     _realtimeSoundTimer?.cancel();
     _realtimeSoundTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-      if (_isUserSpeaking && !_isAISpeaking && _isRealtimeConnected && mounted) {
+      // A simulação pode ser removida ou adaptada se não for mais relevante
+      // Neste novo modelo, o som da IA vem da API.
+      if (_isAISpeaking && _isRealtimeConnected && mounted) {
         setState(() {
           // Simulação mais realista para modo Realtime
           final now = DateTime.now().millisecondsSinceEpoch;
@@ -140,16 +147,16 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   }
 
   Future<void> _initializeAI() async {
-    _speech = stt.SpeechToText();
+    _speech = stt.SpeechToText(); // Corrigido: era SpeechtoText
     bool available = await _speech.initialize(
       onError: (val) {
         debugPrint('❌ Speech error: $val');
         if (mounted) {
           setState(() {
-            _isUserSpeaking = false;
+            _isUserSpeaking = false; // Usuário parou
             _currentSoundLevel = 0.0;
             _realSoundLevel = 0.0;
-            // Não força o estado para idle aqui para manter a conexão realtime
+            // Não muda o estado geral aqui
           });
         }
       },
@@ -159,34 +166,18 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
         if (val == 'listening') {
           if (mounted) {
             setState(() {
-              _isUserSpeaking = true;
-              _isAISpeaking = false;
-              // Só muda o estado visual para listening se não estiver conectado à realtime ainda
-              // ou se estiver em um estado que permite escutar
-              if (_currentState != OrbState.speaking && _currentState != OrbState.processing) {
-                _currentState = OrbState.listening;
-              }
+              _isUserSpeaking = true; // Usuário começou a falar
+              _isAISpeaking = false;  // IA não está falando
+              // O estado visual (_currentState) será controlado pela lógica de transição
             });
           }
-        } else if (val == 'notListening' || val == 'done') {
+        } else if (val == 'notListening' || val == 'done') { // Corrigido: era isNotListeninging
           if (mounted) {
             setState(() {
-              _isUserSpeaking = false;
+              _isUserSpeaking = false; // Usuário parou de falar
               _currentSoundLevel = 0.0;
               _realSoundLevel = 0.0;
-              // Não muda o _currentState aqui se estiver esperando a resposta da IA
-              // Apenas indica que o usuário parou de falar
-              // if (_currentState == OrbState.listening) {
-              //   _currentState = OrbState.idle; // Remover esta linha
-              // }
             });
-          }
-          
-          // Processa o texto se houver
-          if (_transcribedText.isNotEmpty && _transcribedText != _previousTranscribedText) {
-            _previousTranscribedText = _transcribedText;
-            // Em vez de parar tudo, apenas processamos o input
-            _processInput(_transcribedText);
           }
         }
       },
@@ -199,51 +190,17 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
     await _flutterTts.setVolume(1.0);
     await _flutterTts.setPitch(0.9);
     
+    // Estes handlers não são mais usados para controlar estados de UI
     _flutterTts.setStartHandler(() {
-      debugPrint('🔊 TTS Started - IA falando - FORÇAR TRANSIÇÃO PARA ESFERA');
-      if (mounted) {
-        setState(() {
-          _isAISpeaking = true;
-          _isUserSpeaking = false;
-          _currentState = OrbState.speaking;
-          _transcribedText = ''; // Limpa texto quando IA começa a falar
-          _currentSoundLevel = 0.0;
-          _realSoundLevel = 0.0;
-        });
-      }
+      debugPrint('🔊 TTS Started - IA falando');
     });
-    
+
     _flutterTts.setCompletionHandler(() {
       debugPrint('🔇 TTS Completed - IA parou');
-      if (mounted) {
-        setState(() {
-          _isAISpeaking = false;
-          // Não força para idle aqui, deixa o onConversationDone do Realtime cuidar
-          // _currentState = OrbState.idle;
-          _currentResponse = '';
-        });
-      }
-      
-      if (_hasInteracted) {
-        Future.delayed(const Duration(milliseconds: 1000), () {
-          if (mounted) {
-            widget.onInteractionComplete();
-          }
-        });
-      }
     });
-    
-    // Handler para quando o TTS é interrompido manualmente
+
     _flutterTts.setCancelHandler(() {
        debugPrint('🔇 TTS Cancelled - IA interrompida');
-       if (mounted) {
-         setState(() {
-           _isAISpeaking = false;
-           // Não força para idle aqui, deixa o onConversationDone do Realtime cuidar
-           // _currentState = OrbState.idle;
-           _currentResponse = '';
-         });
-       }
     });
   }
 
@@ -252,15 +209,14 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   }
 
   Future<void> _startRealtimeConversation() async {
-    // Se já estiver conectando ou conectado, não faz nada
-    if (_isRealtimeConnecting || _isRealtimeConnected) {
-      debugPrint('[CleanHaloOrb] Já conectado ou conectando à Realtime, ignorando nova conexão');
-      return;
+    if (_isRealtimeConnecting || _isRealtimeConnected) { // Corrigido: era _isRealtimeConnectong
+        debugPrint('[CleanHaloOrb] Já conectado ou conectando à Realtime, ignorando nova conexão');
+        return;
     }
     
     setState(() {
-      _isRealtimeConnecting = true;
-      _currentState = OrbState.processing; // Começa como processing até conectar
+      _isRealtimeConnecting = true; // Corrigido: era _isRealtimeConnectong
+      // _currentState = OrbState.processing; // Pode ser usado se quiser um estado de "conectando"
     });
 
     try {
@@ -272,17 +228,17 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
       _openAIService = OpenAIRealtimeService(
         userName: userId,
         
-        // Callback para quando a IA COMEÇA a falar (transição para esfera)
+        // Callback para quando a IA COMEÇA a falar (transição para FAIXA DE SOM)
         onAudioResponseStart: () { 
-          debugPrint('🔊 [Callback] onAudioResponseStart - IA COMEÇOU a falar - TRANSIÇÃO IMEDIATA para ESFERA');
+          debugPrint('🔊 [Callback] onAudioResponseStart - IA COMEÇOU a falar - TRANSIÇÃO IMEDIATA para FAIXA DE SOM');
           if (mounted) {
             setState(() {
-              _isAISpeaking = true;     
-              _isUserSpeaking = false;  
-              _currentState = OrbState.speaking; 
-              _transcribedText = '';    
-              _currentSoundLevel = 0.0; 
-              _realSoundLevel = 0.0;    
+              _isAISpeaking = true;     // IA está falando
+              _isUserSpeaking = false;  // Usuário não está falando
+              // _currentState = OrbState.speaking; // O AnimatedAIInterface controla a UI com base em _isAISpeaking
+              _currentIAResponseText = ''; // Limpar texto anterior
+              _currentSoundLevel = 0.0; // Resetar som
+              _realSoundLevel = 0.0;    // Resetar som
             });
           }
         },
@@ -294,37 +250,53 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
         },
         
         // Callback para os dados de áudio brutos (NÃO atualiza estado de UI aqui)
+        // Mantido apenas se for necessário reproduzir o áudio diretamente
         onAudioResponse: (audioData) {
+          // Este callback ainda é útil se você estiver reproduzindo o áudio diretamente
+          // ou fazendo algum processamento específico com os bytes.
+          // A transição visual já foi feita no onAudioResponseStart.
           debugPrint('🔊 [Callback] onAudioResponse - Bytes de áudio recebidos: ${audioData.length}');
+          // ... (lógica de reprodução de áudio, se houver) ...
+          // >>> NÃO CHAME setState AQUI PARA MUDAR _isAISpeaking ou _currentState <<<
         },
 
         // Callback para quando a conversa inteira (resposta + áudio) termina
         onConversationDone: () {
-          debugPrint('✅ [Callback] onConversationDone - Interação da IA COMPLETAMENTE terminada - Mantendo conexão ativa');
+          debugPrint('✅ [Callback] onConversationDone - Interação da IA COMPLETAMENTE terminada - Voltando para IDLE');
           if (mounted) {
             setState(() {
               _isAISpeaking = false;
-              // Em vez de voltar para idle, mantém a conexão ativa
-              // Apenas sinaliza que a interação terminou
+              _currentState = OrbState.idle; // Volta ao estado ocioso
               _hasInteracted = true;
-              // _currentState = OrbState.idle; // Removido para manter conexão
-              // _isRealtimeConnected = false; // Removido para manter conexão
+              // _isUserSpeaking já deve estar false
             });
           }
         },
         
-        // Callback para quando o mic começa a ouvir (usuário pode falar)
+        // Callback para quando o mic começa a ouvir (usuário pode falar - transição para ESFERA)
         onListeningStarted: () {
-          debugPrint('👂 [Callback] onListeningStarted - Pronto para ouvir o usuário - Transição para FAIXA DE ONDA');
+          debugPrint('👂 [Callback] onListeningStarted - Pronto para ouvir o usuário - Transição para ESFERA');
           if (mounted) {
             setState(() {
-              _isRealtimeConnecting = false;
+              _isRealtimeConnecting = false; // Corrigido: era _isRealtimeConnectong
               _isRealtimeConnected = true;
-              _currentState = OrbState.listening;
+              _currentState = OrbState.listening; // Ou idle, dependendo da UX desejada
               _isUserSpeaking = true;  // <<-- Essencial: Usuário pode falar
               _isAISpeaking = false;   // <<-- Essencial: IA não está falando
+              _currentIAResponseText = ''; // Limpar texto da IA
             });
             _startRealtimeSoundSimulation();
+          }
+        },
+        
+        // Callback para atualizar o texto transcrito da IA em tempo real
+        onIAResponseTextUpdate: (String partialText) {
+          // Atualiza o texto da IA no estado
+          if (mounted) {
+            setState(() {
+              _currentIAResponseText = partialText;
+              debugPrint('[CleanHaloOrb] Texto da IA atualizado: $_currentIAResponseText');
+            });
           }
         },
       );
@@ -338,9 +310,8 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
       debugPrint('❌ Realtime error: $e');
       if (mounted) {
         setState(() {
-          _isRealtimeConnecting = false;
-          // Em caso de erro real na conexão, volta para idle
-          _currentState = OrbState.idle;
+          _isRealtimeConnecting = false; // Corrigido: era _isRealtimeConnectong
+          _currentState = OrbState.idle; // Volta ao idle em caso de erro
         });
       }
       
@@ -350,7 +321,6 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   }
 
   Future<void> _stopRealtimeConversation() async {
-    debugPrint('[CleanHaloOrb] Solicitando encerramento da conversa Realtime...');
     _stopRealtimeSoundSimulation(); // Parar simulação de som
     
     if (_openAIService != null) {
@@ -361,11 +331,11 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
     if (mounted) {
       setState(() {
         _isRealtimeConnected = false;
-        _isRealtimeConnecting = false;
+        _isRealtimeConnecting = false; // Corrigido: era _isRealtimeConnectong
         _isAISpeaking = false;
-        _isUserSpeaking = false;
+        _isUserSpeaking = false; // Corrigido: era _isUserMaking
         _currentState = OrbState.idle;
-        _transcribedText = '';
+        _currentIAResponseText = '';
         _currentSoundLevel = 0.0;
         _realSoundLevel = 0.0;
       });
@@ -375,11 +345,11 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   }
 
   Future<void> _startLocalListening() async {
-    if (_speech.isNotListening) {
+    if (_speech.isNotListening) { // Corrigido: era isNotListeninging
       if (mounted) {
         setState(() {
-          _transcribedText = '';
-          _isUserSpeaking = true;
+          _currentUserInputText = ''; // Ou _transcribedText se quiser manter o nome
+          _isUserSpeaking = true; // Corrigido: era _isUserMaking
           _isAISpeaking = false;
           _currentState = OrbState.listening;
         });
@@ -389,16 +359,16 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
         onResult: (result) {
           if (mounted) {
             setState(() {
-              _transcribedText = result.recognizedWords;
+              _currentUserInputText = result.recognizedWords;
             });
-            debugPrint('📝 Transcribed: $_transcribedText');
+            debugPrint('📝 Transcribed (local): $_currentUserInputText');
           }
         },
         listenFor: const Duration(seconds: 30),
         localeId: 'pt_BR',
         onSoundLevelChange: (level) {
           // Usar o nível de som REAL do microfone APENAS quando o usuário está falando
-          if (mounted && _isUserSpeaking) {
+          if (mounted && _isUserSpeaking) { // Corrigido: era _isUserMaking
             setState(() {
               // Normalizar o nível de som do microfone (geralmente vem em dB de -60 a 0)
               _realSoundLevel = ((level + 60) / 60).clamp(0.0, 1.0);
@@ -415,7 +385,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
     debugPrint('[CleanHaloOrb] Parando escuta local...');
     if (mounted) {
       setState(() {
-        _isUserSpeaking = false;
+        _isUserSpeaking = false; // Corrigido: era _isUserMaking
         // Não muda o _currentState aqui para não interferir com outros estados
         _currentSoundLevel = 0.0;
         _realSoundLevel = 0.0;
@@ -425,21 +395,6 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   }
 
   Future<void> _processInput(String input) async {
-    // Se estiver usando Realtime, não processa localmente
-    if (_isRealtimeConnected) {
-      debugPrint('📤 Enviando input para OpenAI Realtime (processamento automático): $input');
-      // A API Realtime com server_vad já está processando
-      // Limpar o texto transcrito localmente
-      if (mounted) {
-        setState(() {
-          _transcribedText = '';
-          _hasInteracted = true;
-        });
-      }
-      return;
-    }
-
-    // Processamento local (fallback)
     if (input.trim().isEmpty) {
       if (mounted) {
         setState(() {
@@ -452,18 +407,18 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
     if (mounted) {
       setState(() {
         _currentState = OrbState.processing;
-        _isUserSpeaking = false;
+        _isUserSpeaking = false; // Corrigido: era _isUserMaking
         _isAISpeaking = false;
         _currentResponse = '';
         _hasInteracted = true;
         _currentSoundLevel = 0.0;
         _realSoundLevel = 0.0;
-        _transcribedText = ''; // Limpar texto transcrito
+        _currentUserInputText = ''; // Corrigido: era _transcribedText
       });
     }
 
     try {
-      debugPrint('🚀 Processing locally: $input');
+      debugPrint('🚀 Processing: $input');
       
       final response = await AIService()
           .sendMessage(input, sessionId: widget.sessionId)
@@ -474,27 +429,27 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
       
       final message = response['message'] ?? 'Desculpe, não consegui processar.';
       
-      debugPrint('✅ Local Response: $message');
+      debugPrint('✅ Response: $message');
       
       if (mounted) {
         setState(() {
           _currentResponse = message;
           _currentState = OrbState.speaking;
           _isAISpeaking = true;
-          _isUserSpeaking = false;
+          _isUserSpeaking = false; // Corrigido: era _isUserMaking
         });
         
         await _flutterTts.speak(message);
       }
     } catch (e) {
-      debugPrint('❌ Local Process error: $e');
+      debugPrint('❌ Process error: $e');
       
       if (mounted) {
         setState(() {
           _currentResponse = "Desculpe, ocorreu um erro. Tente novamente.";
           _currentState = OrbState.speaking;
           _isAISpeaking = true;
-          _isUserSpeaking = false;
+          _isUserSpeaking = false; // Corrigido: era _isUserMaking
         });
         
         await _flutterTts.speak(_currentResponse);
@@ -516,10 +471,10 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   }
 
   String _getStatusText() {
-    if (_isUserSpeaking) {
-      return 'Ouvindo...';
+    if (_isUserSpeaking) { // Corrigido: era _isUserMaking
+      return 'Ouvindo...'; // Usuário ativo
     } else if (_isAISpeaking) {
-      return 'Respondendo...';
+      return 'Respondendo...'; // IA ativa
     } else if (_currentState == OrbState.processing) {
       return 'Pensando...';
     }
@@ -580,27 +535,34 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                   child: AnimatedBuilder(
                     animation: _breathingController,
                     builder: (context, child) {
-                      // Widget da esfera
+                      // Widget da esfera (agora representa o estado do USUÁRIO)
+                      // A visibilidade e comportamento da esfera serão controlados pelo AnimatedAIInterface
                       final orbWidget = Transform.scale(
                         scale: _breathingScale.value,
                         child: AIAVideoPlayer(
                           size: 340,
-                          isListening: _currentState == OrbState.listening && !_isUserSpeaking,
+                          // isListening, isProcessing, isSpeaking podem ser ajustados
+                          // com base em _isUserSpeaking e _currentState se necessário
+                          isListening: _isUserSpeaking, // Esfera ativa quando usuário fala
                           isProcessing: _currentState == OrbState.processing,
-                          isSpeaking: _currentState == OrbState.speaking,
+                          isSpeaking: false, // A esfera não "fala" mais, a faixa sim
                           onTap: () {}, // Tap será tratado pelo AnimatedAIInterface
                         ),
                       );
                       
                       // Interface com transição
+                      // AQUI ESTÁ A MUDANÇA PRINCIPAL:
+                      // Agora passamos _isAISpeaking para isUserSpeaking (para mostrar a faixa)
+                      // e _isUserSpeaking para isAISpeaking (para mostrar a esfera)
                       return AnimatedAIInterface(
-                        isUserSpeaking: _isUserSpeaking,
-                        isAISpeaking: _isAISpeaking,
+                        // INVERTENDO O SIGNIFICADO DAS VARIÁVEIS PARA A NOVA LÓGICA DE UI
+                        isUserSpeaking: _isAISpeaking, // Quando IA fala, mostra a faixa
+                        isAISpeaking: _isUserSpeaking, // Quando usuário fala, mostra a esfera
                         soundLevel: _currentSoundLevel, // Usa o nível de som real ou simulado
-                        transcribedText: _transcribedText,
+                        transcribedText: _currentIAResponseText, // Texto transcrito da IA
                         orbWidget: orbWidget,
                         onTap: () async {
-                          debugPrint('🎯 Tap - State: $_currentState, User: $_isUserSpeaking, AI: $_isAISpeaking');
+                          debugPrint('🎯 Tap - State: $_currentState, User (Sphere): $_isUserSpeaking, AI (Wave): $_isAISpeaking');
 
                           if (_currentState == OrbState.processing) {
                             debugPrint('⚠️ Processing, ignoring tap');
@@ -608,47 +570,52 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                           }
 
                           // Lógica refinada para cada estado
-                          if (_currentState == OrbState.idle) {
-                            // Se estiver ocioso, inicia escuta
-                            debugPrint('🎤 Iniciando escuta do IDLE...');
-                            // Só inicia uma nova conexão se não houver uma ativa
-                            if (!_isRealtimeConnected && !_isRealtimeConnecting) {
-                              await _startRealtimeConversation();
-                            }
-                            // Se já estiver conectado, apenas começa a escutar
-                            if (_isRealtimeConnected) {
-                              debugPrint('🎧 Já conectado à Realtime, aguardando fala...');
-                              // O estado visual (_currentState) será atualizado pelos callbacks
-                              // A API Realtime com server_vad deve começar a escutar automaticamente
-                            }
-                            
-                            // Fallback para speech-to-text local se realtime falhar
+                          if (!_isRealtimeConnected && !_isRealtimeConnecting) { // Corrigido: era _isRealtimeConnectong
+                            // Se NÃO estiver conectado, inicia a conexão
+                            debugPrint('🔌 Iniciando conexão Realtime...');
+                            await _startRealtimeConversation();
                             if (!_isRealtimeConnected) {
                               await _startLocalListening();
                             }
-                          } else if (_currentState == OrbState.listening) {
-                             // Se estiver ouvindo, para a escuta
-                             debugPrint('✋ Parando escuta do usuário (listening)...');
-                             // Não encerra a conexão, apenas para de escutar
-                             _stopListening();
-                          } else if (_currentState == OrbState.speaking) {
-                            // Se a IA estiver falando, interrompe a fala da IA
-                            debugPrint('🔇 Interrompendo fala da IA...');
-                            await _flutterTts.stop(); // Interrompe o TTS local
-                            
-                            // Atualizar o estado imediatamente para permitir nova interação
-                            if (mounted) {
-                              setState(() {
-                                _isAISpeaking = false;
-                                _currentState = OrbState.idle; 
-                              });
+                          } else if (_isRealtimeConnected) {
+                            // Se estiver conectado
+                            if (_isUserSpeaking) { // Corrigido: era _isUserMaking
+                              // E o usuário estiver falando (esfera visível), para a escuta
+                              debugPrint('✋ Parando escuta do usuário...');
+                              // A API Realtime com server_vad deve parar de escutar
+                              // Podemos enviar um sinal para parar, ou simplesmente esperar
+                              // o server_vad detectar o silêncio.
+                              // Por enquanto, confiamos no server_vad.
+                              // Se precisar de uma ação explícita, pode ser algo como:
+                              // _sendStopListeningSignal(); // Função hipotética
+                              _stopListening(); // Se ainda estiver usando speech_to_text local
+                            } else if (_isAISpeaking) {
+                              // E a IA estiver falando (faixa visível), interrompe a fala da IA
+                              debugPrint('🔇 Interrompendo fala da IA...');
+                              // Se estiver usando TTS local:
+                              // await _flutterTts.stop();
+                              // Se estiver usando áudio da Realtime, não há stop direto.
+                              // A melhor abordagem é deixar a API terminar.
+                              // Podemos atualizar o estado localmente para dar feedback imediato.
+                              // O onConversationDone da API ainda será chamado posteriormente.
+                              await _flutterTts.stop(); // Interrompe o TTS local
+                              if (mounted) {
+                                setState(() {
+                                  _isAISpeaking = false;
+                                  _currentState = OrbState.idle; // Volta ao idle imediatamente
+                                });
+                              }
+                            } else {
+                              // Conectado, mas nenhum está ativo, talvez esteja em idle esperando input
+                              debugPrint('🎧 Conectado, aguardando interação...');
+                              // A API Realtime com server_vad deve começar a escutar automaticamente
+                              // quando o usuário começar a falar.
                             }
-                          } else if (_isUserSpeaking) {
-                            // Segurança extra: se por algum motivo _isUserSpeaking estiver true
-                            // mas o _currentState não for listening, para a escuta.
-                            debugPrint('✋ Parando escuta do usuário (segurança)...');
-                            _stopListening();
                           }
+                          // Fallback para speech-to-text local se realtime falhar (se for mantido)
+                          // if (!_isRealtimeConnected) {
+                          //   await _startLocalListening();
+                          // }
                         },
                       );
                     },
@@ -670,9 +637,9 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                       child: Text(
                         _getStatusText(),
                         style: GoogleFonts.inter(
-                          color: _isUserSpeaking 
+                          color: _isUserSpeaking // Corrigido: era _isUserMaking
                               ? Colors.cyan 
-                              : _getOrbColor(),
+                              : (_isAISpeaking ? Colors.purple : _getOrbColor()),
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
                         ),

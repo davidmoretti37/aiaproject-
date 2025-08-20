@@ -1,7 +1,8 @@
+// lib/services/openai_realtime_service.dart
+
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -16,10 +17,15 @@ class OpenAIRealtimeService {
   MediaStream? _localStream;
   MediaStream? _remoteStream;
 
-  // Novos callbacks para início/fim do áudio da IA
+  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  // NOVOS CALLBACKS
   final VoidCallback? onAudioResponseStart; // Quando a IA começa a falar
   final VoidCallback? onAudioResponseEnd;   // Quando a IA para de falar
+  // Callback para atualizar o texto transcrito da IA em tempo real
+  final void Function(String partialText)? onIAResponseTextUpdate;
+  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
+  // Callbacks existentes
   final VoidCallback? onListeningStarted;
   final VoidCallback? onConversationDone;
   final void Function(Uint8List)? onAudioResponse;
@@ -56,14 +62,20 @@ class OpenAIRealtimeService {
     'sdpSemantics': 'unified-plan'
   };
 
+  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+  // Construtor atualizado com novos callbacks
   OpenAIRealtimeService({
-    this.onAudioResponseStart, // Novo callback
-    this.onAudioResponseEnd,   // Novo callback
+    // NOVOS CALLBACKS
+    this.onAudioResponseStart, // Quando a IA começa a falar
+    this.onAudioResponseEnd,   // Quando a IA para de falar
+    this.onIAResponseTextUpdate, // Texto transcrito da IA
+    // Callbacks existentes
     this.onListeningStarted,
     this.onConversationDone,
     this.onAudioResponse,
     this.userName,
   });
+  // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
   Future<bool> iniciarConexaoComOpenAI() async {
     if (_isProcessingConnection) {
@@ -319,9 +331,6 @@ class OpenAIRealtimeService {
         // EVENTOS CRUCIAIS PARA A TRANSIÇÃO DA INTERFACE
         case 'output_audio_buffer.started':
           debugPrint('[OpenAI Realtime] IA começou a falar');
-          // Forçar saída pelo alto-falante principal antes de iniciar a fala da IA
-          await AudioService.forceSpeakerOutput();
-          AudioService.maximizeSystemVolume();
           // >>>>>>>> CHAMAR O CALLBACK PARA INÍCIO DA FALA DA IA <<<<<<<<<<
           onAudioResponseStart?.call(); 
           break;
@@ -360,12 +369,37 @@ class OpenAIRealtimeService {
           }
           break;
           
+        // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        // Capturar transcrição da IA (delta - em tempo real)
+        case 'response.audio_transcript.delta':
+          final delta = data['delta'] as String?;
+          if (delta != null) {
+            _currentIAResponse += delta;
+            // >>>>>>>> CHAMAR O NOVO CALLBACK PARA ATUALIZAR O TEXTO DA IA <<<<<<<<<<
+            onIAResponseTextUpdate?.call(_currentIAResponse);
+            // Log opcional para debug de transcrição
+            // debugPrint('[OpenAI Realtime] Transcrição delta da IA: "$delta"');
+          }
+          break;
+          
+        // Capturar transcrição da IA (completa)
+        case 'response.audio_transcript.done':
+           final transcript = data['transcript'] as String?;
+           if (transcript != null) {
+             _currentIAResponse = transcript; // Atualiza com o texto final
+             // >>>>>>>> CHAMAR O NOVO CALLBACK PARA ATUALIZAR O TEXTO FINAL DA IA <<<<<<<<<<
+             onIAResponseTextUpdate?.call(_currentIAResponse);
+             debugPrint('[OpenAI Realtime] Transcrição completa da IA: "$transcript"');
+           }
+           break;
+        // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+          
         // Capturar transcrição do usuário (delta - em tempo real)
         case 'conversation.item.input_audio_transcription.delta':
           final delta = data['delta'] as String?;
           if (delta != null) {
-            // Log opcional para debug de transcrição
-            // debugPrint('[OpenAI Realtime] Transcrição delta: "$delta"');
+            // Log opcional para debug de transcrição do usuário
+            // debugPrint('[OpenAI Realtime] Transcrição delta do usuário: "$delta"');
           }
           break;
           
@@ -421,35 +455,13 @@ class OpenAIRealtimeService {
           }
           break;
 
-        // Capturar resposta da IA em texto (delta)
-        case 'response.audio_transcript.delta':
-          final delta = data['delta'] as String?;
-          if (delta != null) {
-            _currentIAResponse += delta;
-          }
-          break;
-          
-        // Capturar resposta da IA em texto (completa)
-        case 'response.audio_transcript.done':
-          if (_currentIAResponse.trim().isNotEmpty && _currentUserMessage.isNotEmpty) {
-            _exchangeCounter++;
-            
-            final exchange = {
-              "exchange_id": _exchangeCounter,
-              "timestamp": _currentExchangeStart?.toIso8601String(),
-              "user_message": _currentUserMessage,
-              "ai_response": _currentIAResponse,
-              "duration_ms": DateTime.now().difference(_currentExchangeStart ?? DateTime.now()).inMilliseconds
-            };
-            
-            _conversationExchanges.add(exchange);
-            debugPrint('[OpenAI Realtime] Resposta da IA: "$_currentIAResponse"');
-            debugPrint('[OpenAI Realtime] Troca ${_exchangeCounter} adicionada à conversa');
-            
-            // Limpar para próxima troca
-            _currentIAResponse = '';
-            _currentUserMessage = '';
-          }
+        // Eventos conhecidos mas não tratados especificamente para evitar logs excessivos
+        case 'response.created':
+        case 'response.output_item.added':
+        case 'response.content_part.added':
+        case 'response.content_part.done':
+        case 'response.output_item.done':
+          // debugPrint("[OpenAI Realtime] Evento conhecido não tratado: $type");
           break;
           
         default:
@@ -576,8 +588,11 @@ Você é a **AIA**, uma assistente de IA conversacional que atua como coordenado
 **Para busca de restaurantes:**
 - Tipo de comida desejada (pizza, hambúrguer, sushi, etc.)
 - Localização (coordenadas GPS ou endereço)
-**Para pedidos:**
-- Restaurante escolhido e itens do cardápio
+
+### 🚕 **UBER**
+**Para solicitar Uber:**
+- Destino (endereço, ponto de referência, nome do negócio, etc.)
+- Pickup (opcional, padrão é localização atual)
 
 ## FERRAMENTAS DISPONÍVEIS
 
@@ -591,16 +606,17 @@ Você tem acesso a uma ferramenta chamada `execute_task` que permite executar a�
 - **Lembretes**: Quando tiver evento E data/horário
 - **WhatsApp**: Quando tiver número E mensagem OU dados do grupo
 - **Food Delivery**: Quando tiver tipo de comida E localização
+- **Uber**: Quando tiver destino
 
 ## REGRAS CRÍTICAS
 
-1. **NUNCA** use execute_task sem ter TODAS as informações obrigatórias
-2. **SEMPRE** colete informações primeiro, execute depois
-3. **SEMPRE** informe que emails vão para lucas.arais@inventu.ai
-4. **MANTENHA** a conversa natural e fluida, evite soar robótico
-5. **RESPONDA** sempre pensando que será convertido em áudio
-6. **SEJA** paciente e educado, mesmo se o usuário não fornecer informações claras
-7. **IDENTIFIQUE** automaticamente qual agente usar baseado no contexto da solicitação
+1.  **NUNCA** use execute_task sem ter TODAS as informações obrigatórias
+2.  **SEMPRE** colete informações primeiro, execute depois
+3.  **SEMPRE** informe que emails vão para lucas.arais@inventu.ai
+4.  **MANTENHA** a conversa natural e fluida, evite soar robótico
+5.  **RESPONDA** sempre pensando que será convertido em áudio
+6.  **SEJA** paciente e educado, mesmo se o usuário não fornecer informações claras
+7.  **IDENTIFIQUE** automaticamente qual agente usar baseado no contexto da solicitação
 
 ## REGRAS ESPECIAIS PARA LEMBRETES VS EVENTOS
 
@@ -644,12 +660,11 @@ Lembre-se: você é a coordenadora inteligente de 7 agentes especializados que g
         "type": "session.update",
         "session": {
           "modalities": ["audio", "text"],
+          "instructions": instructions,
           "voice": "sage",
           "output_audio_format": "pcm16",
           "input_audio_format": "pcm16",
-          "input_audio_transcription": {
-            "model": "whisper-1",
-          },
+          "input_audio_transcription": {"model": "whisper-1"},
           "turn_detection": {
             "type": "server_vad",
             "threshold": 0.5,
@@ -659,7 +674,6 @@ Lembre-se: você é a coordenadora inteligente de 7 agentes especializados que g
           },
           "temperature": 0.8,
           "max_response_output_tokens": "inf",
-          "instructions": instructions,
           "tools": [
             {
               "type": "function",
@@ -1000,8 +1014,8 @@ Lembre-se: você é a coordenadora inteligente de 7 agentes especializados que g
       // Check for premium ride requests
       final destinationLower = destination.toLowerCase();
       final pickupLower = pickup.toLowerCase();
-      bool isPremium = destinationLower.contains('black') || destinationLower.contains('premium') || 
-          destinationLower.contains('executivo') || pickupLower.contains('black') || 
+      bool isPremium = destinationLower.contains('black') || destinationLower.contains('premium') ||
+          destinationLower.contains('executivo') || pickupLower.contains('black') ||
           pickupLower.contains('premium') || pickupLower.contains('executivo');
       
       if (isPremium) {
