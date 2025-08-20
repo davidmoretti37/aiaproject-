@@ -228,7 +228,9 @@ class GoogleOAuthService {
       
       if (authUrl != null) {
         // Close loading dialog
-        Navigator.of(context).pop();
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
         
         // Show instruction dialog
         await showDialog(
@@ -241,7 +243,9 @@ class GoogleOAuthService {
             actions: [
               ElevatedButton(
                 onPressed: () async {
-                  Navigator.of(context).pop();
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
                   
                   // Launch browser
                   await service.launchOAuthUrl(authUrl);
@@ -259,7 +263,11 @@ class GoogleOAuthService {
                           const Text('Aguardando autenticação...'),
                           const SizedBox(height: 10),
                           TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
+                            onPressed: () {
+                              if (context.mounted) {
+                                Navigator.of(context).pop();
+                              }
+                            },
                             child: const Text('Cancelar'),
                           ),
                         ],
@@ -271,19 +279,23 @@ class GoogleOAuthService {
                   final success = await service.completeOAuthFlow();
                   
                   // Close waiting dialog
-                  Navigator.of(context).pop();
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                  }
                   
                   // Show result
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        success 
-                          ? '✅ Conectado com sucesso!' 
-                          : '❌ Falha na autenticação',
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          success 
+                            ? '✅ Conectado com sucesso!' 
+                            : '❌ Falha na autenticação',
+                        ),
+                        backgroundColor: success ? Colors.green : Colors.red,
                       ),
-                      backgroundColor: success ? Colors.green : Colors.red,
-                    ),
-                  );
+                    );
+                  }
                 },
                 child: const Text('Abrir Navegador'),
               ),
@@ -292,25 +304,33 @@ class GoogleOAuthService {
         );
       } else {
         // Close loading dialog
-        Navigator.of(context).pop();
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
         
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('❌ Erro ao iniciar autenticação'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Close loading dialog
+      if (context.mounted) {
+        Navigator.of(context).pop();
+      }
+      
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Erro ao iniciar autenticação'),
+          SnackBar(
+            content: Text('❌ Erro: $e'),
             backgroundColor: Colors.red,
           ),
         );
       }
-    } catch (e) {
-      // Close loading dialog
-      Navigator.of(context).pop();
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('❌ Erro: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
     }
   }
 }
