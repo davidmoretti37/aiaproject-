@@ -93,6 +93,10 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
     _initializeAI();
     _checkServerConnection();
     _startFadeIn();
+    // Iniciar escuta automaticamente ao abrir a tela
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (mounted) _startListening();
+    });
   }
 
   void _initializeControllers() {
