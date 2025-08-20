@@ -567,7 +567,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: const Color(0xFFe6e8ec),
       body: AnimatedBuilder(
         animation: _fadeInOpacity,
         builder: (context, child) {
