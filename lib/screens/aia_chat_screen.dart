@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../widgets/aia_video_player.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AIAChatScreen extends StatefulWidget {
   final VoidCallback onBackToVoice;
@@ -12,19 +15,63 @@ class AIAChatScreen extends StatefulWidget {
   State<AIAChatScreen> createState() => _AIAChatScreenState();
 }
 
-class _AIAChatScreenState extends State<AIAChatScreen> {
+class _AIAChatScreenState extends State<AIAChatScreen> with SingleTickerProviderStateMixin {
   final TextEditingController _controller = TextEditingController();
   final List<_ChatMessage> _messages = [];
   final ScrollController _scrollController = ScrollController();
+  bool _isLoading = false;
+  late AnimationController _dotsController;
 
   @override
   void initState() {
     super.initState();
-    // Interrompe qualquer sessão de voz ao abrir o chat
     widget.onChatOpened?.call();
+    _dotsController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..repeat();
   }
 
-  void _sendMessage() {
+  @override
+  void dispose() {
+    _dotsController.dispose();
+    super.dispose();
+  }
+
+  Future<String> _sendToOpenAI(String userMessage) async {
+    final apiKey = dotenv.env['OPENAI_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      return "Chave de API OpenAI não encontrada.";
+    }
+    final url = Uri.parse('https://api.openai.com/v1/chat/completions');
+    final prompt = "$userMessage\n\nSeja sempre amigável.";
+    final body = jsonEncode({
+      "model": "gpt-3.5-turbo",
+      "messages": [
+        {"role": "system", "content": "Seja sempre amigável."},
+        {"role": "user", "content": prompt}
+      ],
+      "max_tokens": 256,
+      "temperature": 0.7
+    });
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $apiKey"
+      },
+      body: body,
+    );
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final content = data['choices'][0]['message']['content'];
+      return content.trim();
+    } else {
+      return "Erro OpenAI: ${response.statusCode} - ${response.body}";
+    }
+  }
+
+  void _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
     setState(() {
@@ -33,31 +80,33 @@ class _AIAChatScreenState extends State<AIAChatScreen> {
         isUser: true,
       ));
       _controller.clear();
+      _isLoading = true;
     });
-    // Scroll para o final
-    Future.delayed(const Duration(milliseconds: 100), () {
-      _scrollToBottom();
+    _scrollToBottom();
+
+    // Chamada direta à OpenAI
+    final aiResponse = await _sendToOpenAI(text);
+
+    setState(() {
+      _isLoading = false;
+      _messages.add(_ChatMessage(
+        text: aiResponse,
+        isUser: false,
+      ));
     });
-    // Simular resposta da IA após um pequeno delay
-    Future.delayed(const Duration(milliseconds: 600), () {
-      setState(() {
-        _messages.add(_ChatMessage(
-          text: "Recebi: \"$text\"",
-          isUser: false,
-        ));
-      });
-      _scrollToBottom();
-    });
+    _scrollToBottom();
   }
 
   void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   @override
@@ -72,7 +121,7 @@ class _AIAChatScreenState extends State<AIAChatScreen> {
         child: SafeArea(
           child: Container(
             color: Colors.transparent,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
             child: Row(
               children: [
                 IconButton(
@@ -86,15 +135,14 @@ class _AIAChatScreenState extends State<AIAChatScreen> {
                       "AIA",
                       style: TextStyle(
                         color: arrowColor,
-                        fontSize: 18,
+                        fontSize: 14,
                         fontWeight: FontWeight.w400,
-                        letterSpacing: 1.1,
                       ),
                     ),
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(right: 18),
+                  padding: const EdgeInsets.only(right: 20),
                   child: CircleAvatar(
                     radius: 20,
                     backgroundColor: Colors.transparent,
@@ -108,7 +156,6 @@ class _AIAChatScreenState extends State<AIAChatScreen> {
       ),
       body: Column(
         children: [
-          // Orb centralizado e pequeno, só aparece se não houver mensagens
           if (_messages.isEmpty)
             Expanded(
               child: Center(
@@ -124,14 +171,38 @@ class _AIAChatScreenState extends State<AIAChatScreen> {
             Expanded(
               child: ListView.builder(
                 controller: _scrollController,
-                padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
-                itemCount: _messages.length,
+                padding: const EdgeInsets.fromLTRB(12, 16, 12, 8),
+                itemCount: _messages.length + (_isLoading ? 1 : 0),
                 reverse: false,
                 itemBuilder: (context, index) {
+                  if (_isLoading && index == _messages.length) {
+                    // Loading discreto: só avatar IA + três pontos animados
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: Image.asset(
+                              'assets/aia_icon.png',
+                              width: 32,
+                              height: 32,
+                            ),
+                          ),
+                          _AnimatedDots(
+                            color: arrowColor,
+                            controller: _dotsController,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
                   final msg = _messages[index];
                   final isUser = msg.isUser;
                   return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 10), // Espaço maior entre mensagens
+                    padding: const EdgeInsets.symmetric(vertical: 10),
                     child: Row(
                       mainAxisAlignment:
                           isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
@@ -144,7 +215,7 @@ class _AIAChatScreenState extends State<AIAChatScreen> {
                               'assets/aia_icon.png',
                               width: 32,
                               height: 32,
-                                                          ),
+                            ),
                           ),
                         Flexible(
                           child: Container(
@@ -165,7 +236,7 @@ class _AIAChatScreenState extends State<AIAChatScreen> {
                         ),
                         if (isUser)
                           Padding(
-                            padding: const EdgeInsets.only(left: 8),
+                            padding: const EdgeInsets.only(left: 20),
                             child: CircleAvatar(
                               radius: 18,
                               backgroundColor: Colors.transparent,
@@ -181,7 +252,7 @@ class _AIAChatScreenState extends State<AIAChatScreen> {
           // Input fixo na parte inferior
           Container(
             color: Colors.transparent,
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 60),
             child: Row(
               children: [
                 Expanded(
@@ -196,20 +267,19 @@ class _AIAChatScreenState extends State<AIAChatScreen> {
                           child: TextField(
                             controller: _controller,
                             decoration: const InputDecoration(
-                              hintText: "ask anything",
+                              hintText: "Ask anything",
                               hintStyle: TextStyle(color: Colors.grey),
                               border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                             ),
                             onSubmitted: (_) => _sendMessage(),
                           ),
                         ),
-                        // Botão de som (soundwave.svg) na cor da seta
                         IconButton(
                           icon: SvgPicture.asset(
                             'assets/soundwave.svg',
-                            width: 18,
-                            height: 18,
+                            width: 20,
+                            height: 20,
                             color: arrowColor,
                           ),
                           onPressed: widget.onBackToVoice,
@@ -224,6 +294,40 @@ class _AIAChatScreenState extends State<AIAChatScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AnimatedDots extends StatelessWidget {
+  final Color color;
+  final AnimationController controller;
+
+  const _AnimatedDots({required this.color, required this.controller, Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: controller,
+      builder: (context, child) {
+        int dots = 1 + (controller.value * 3).floor() % 3;
+        return Row(
+          children: List.generate(
+            dots,
+            (i) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 1.5),
+              child: Text(
+                ".",
+                style: TextStyle(
+                  fontSize: 28,
+                  color: color,
+                  fontWeight: FontWeight.w400,
+                  height: 1,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
