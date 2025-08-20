@@ -604,47 +604,27 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                     top: 200,
                     left: 0,
                     right: 0,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Fade pequeno acima do texto
-                        Container(
-                          height: 10,
-                          margin: const EdgeInsets.symmetric(horizontal: 24),
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Color(0xFFEAEBEE),
-                                Colors.transparent,
-                              ],
+                    child: SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        controller: _aiTranscriptScrollController,
+                        itemCount: _aiTranscriptLines.length,
+                        shrinkWrap: true,
+                        padding: const EdgeInsets.symmetric(horizontal: 24),
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 2),
+                            child: Text(
+                              _aiTranscriptLines[index],
+                              style: GoogleFonts.inter(
+                                color: const Color(0xFF444648),
+                                fontSize: 20,
+                                fontWeight: FontWeight.w400,
+                              ),
                             ),
-                          ),
-                        ),
-                        SizedBox(
-                          height: 176,
-                          child: ListView.builder(
-                            controller: _aiTranscriptScrollController,
-                            itemCount: _aiTranscriptLines.length,
-                            shrinkWrap: true,
-                            padding: const EdgeInsets.symmetric(horizontal: 24),
-                            itemBuilder: (context, index) {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 2),
-                                child: Text(
-                                  _aiTranscriptLines[index],
-                                  style: GoogleFonts.inter(
-                                    color: const Color(0xFF444648),
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
+                          );
+                        },
+                      ),
                     ),
                   ),
                 // Botão de configurações na extrema direita
