@@ -236,18 +236,19 @@ class _CleanAppFlowState extends State<CleanAppFlow>
           // Main Content
           _buildMainContent(),
           
-          // Reset Button (always visible)
-          Positioned(
-            top: 40,
-            right: 20,
-            child: SafeArea(
-              child: IconButton(
-                icon: Icon(Icons.refresh, color: Colors.white.withOpacity(0.7)),
-                onPressed: _resetAppFlow,
-                tooltip: 'Reset App',
+          // Reset Button (visible em todas as telas, exceto na tela da AIA/orb)
+          if (_currentState != AppFlowState.haloOrb)
+            Positioned(
+              top: 40,
+              right: 20,
+              child: SafeArea(
+                child: IconButton(
+                  icon: Icon(Icons.refresh, color: Colors.white.withOpacity(0.7)),
+                  onPressed: _resetAppFlow,
+                  tooltip: 'Reset App',
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

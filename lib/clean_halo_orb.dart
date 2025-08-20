@@ -568,35 +568,6 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
             opacity: _fadeInOpacity.value,
             child: Stack(
               children: [
-                // Top bar with reload (left) and settings (right)
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        children: [
-                          // Reload icon (left)
-                          IconButton(
-                            icon: Icon(
-                              Icons.refresh,
-                              color: Color(0xFF464646),
-                              size: 26,
-                            ),
-                            onPressed: _reload,
-                            tooltip: 'Reload',
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
                 // Main Orb (clean, no debugging visuals)
                 // Transcrição da IA no topo
                 if (_currentState == OrbState.speaking && _aiTranscriptLines.isNotEmpty)
@@ -627,40 +598,6 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                       ),
                     ),
                   ),
-                // Botão de configurações na extrema direita
-                Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          // Reload icon (esquerda)
-                          IconButton(
-                            icon: Icon(Icons.refresh, color: Color(0xFF464646), size: 26),
-                            onPressed: _reload,
-                            tooltip: 'Reload',
-                          ),
-                          // Config icon (direita)
-                          IconButton(
-                            icon: Icon(Icons.settings, color: Color(0xFF464646), size: 26),
-                            onPressed: () {
-                              debugPrint('[AIA LOG] Botão de configurações pressionado');
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                              );
-                            },
-                            tooltip: 'Configurações',
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
                 Center(
                   child: Stack(
                     alignment: Alignment.center,
