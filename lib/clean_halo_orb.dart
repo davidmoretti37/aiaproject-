@@ -579,7 +579,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                       Padding(
                         padding: const EdgeInsets.only(left: 24),
                         child: IconButton(
-                          icon: const Icon(Icons.arrow_back, color: Colors.black87, size: 24),
+                          icon: const Icon(Icons.arrow_back, color: Color(0xDD3DB6D4), size: 24),
                           onPressed: () {
                             Navigator.of(context).pop();
                           },
@@ -718,7 +718,7 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.mic, color: Colors.blue, size: 22),
+                                Icon(Icons.mic, color: const Color(0xFF3DB6D4), size: 22),
                                 SizedBox(width: 10),
                                 Text(
                                   "Tap to Speak",

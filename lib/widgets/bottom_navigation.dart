@@ -12,7 +12,7 @@ class AIABottomNavigation extends StatelessWidget {
     required this.onMuteTap,
   }) : super(key: key);
 
-  static const Color iconColor = Color(0xFF464646); // Cor principal do projeto
+  static const Color iconColor = Color(0xFF3DB6D4); // Cor principal do projeto
 
   @override
   Widget build(BuildContext context) {
@@ -25,8 +25,8 @@ class AIABottomNavigation extends StatelessWidget {
           GestureDetector(
             onTap: onChatTap,
             child: Container(
-              width: 56,
-              height: 56,
+              width: 50,
+              height: 50,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white,
@@ -34,7 +34,7 @@ class AIABottomNavigation extends StatelessWidget {
               child: Icon(
                 Icons.chat_bubble,
                 color: iconColor,
-                size: 24,
+                size: 22,
               ),
             ),
           ),
@@ -42,14 +42,14 @@ class AIABottomNavigation extends StatelessWidget {
           GestureDetector(
             onTap: onMuteTap,
             child: Container(
-              width: 56,
-              height: 56,
+              width: 50,
+              height: 50,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white,
               ),
               child: Icon(
-                isMuted ? Icons.mic_off : Icons.mic,
+                Icons.close,
                 color: iconColor,
                 size: 24,
               ),
