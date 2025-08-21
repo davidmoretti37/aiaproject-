@@ -68,6 +68,7 @@ dependencies:
   flutter_webrtc: ^0.11.7  # WebRTC for real-time communication
   flutter_dotenv: ^5.1.0   # Environment variables for API keys
   video_player: ^2.8.1     # Video player for AIA video background
+  geolocator: ^10.1.0      # Para captura de localização do usuário
 
 dev_dependencies:
   flutter_test:
