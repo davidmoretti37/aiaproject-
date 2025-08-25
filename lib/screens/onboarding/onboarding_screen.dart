@@ -78,13 +78,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(bottom: 48, left: 30, right: 30, top: 0),
+              padding: const EdgeInsets.only(bottom: 52, left: 30, right: 30, top: 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 48,
+                    height: 48,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       color: Color(0xFF95C5D9),
