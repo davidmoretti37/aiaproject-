@@ -78,7 +78,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(bottom: 48, left: 16, right: 16, top: 0),
+              padding: const EdgeInsets.only(bottom: 48, left: 30, right: 30, top: 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -87,10 +87,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     height: 44,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xFF3A3A3A),
+                      color: Color(0xFF95C5D9),
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Color(0xFF95C5D9), size: 18),
+                      icon: const Icon(Icons.arrow_back, color: Color(0xFFFFFFFF), size: 18),
                       onPressed: () {
                         if (_controller.currentPage == 0) {
                           Navigator.of(context).pop();
@@ -123,14 +123,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ),
                   ),
                   Container(
-                    width: 44,
-                    height: 44,
+                    width: 48,
+                    height: 48,
                     decoration: const BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Color(0xFF3A3A3A),
+                      color: Color(0xFF95C5D9),
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_forward, color: Color(0xFF95C5D9), size: 18),
+                      icon: const Icon(Icons.arrow_forward, color: Color(0xFFFFFFFF), size: 18),
                       onPressed: _controller.currentPage < _steps.length - 1
                           ? _controller.nextPage
                           : null,

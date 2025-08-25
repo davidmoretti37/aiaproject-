@@ -8,9 +8,9 @@ class WelcomeScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 72),
+        const SizedBox(height: 100),
         Padding(
-          padding: const EdgeInsets.only(left: 24, right: 24),
+          padding: const EdgeInsets.only(left: 30, right: 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
