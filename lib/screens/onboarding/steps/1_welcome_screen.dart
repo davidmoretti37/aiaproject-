@@ -1,62 +1,66 @@
 import 'package:flutter/material.dart';
-import 'onboarding_step_layout.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return OnboardingStepLayout(
-      title: 'Bem-vindo à AIA',
-      description: 'Seu assistente inteligente para organizar sua vida, viagens, agenda, veículos, alimentação, e muito mais. '
-          '\n\nAgentes disponíveis:\n'
-          '• Viagem ✈️\n'
-          '• Agenda 📅\n'
-          '• Veículos 🚗\n'
-          '• Comida 🍕\n'
-          '• Email 📧\n'
-          '• Lembretes ⏰\n'
-          '• WhatsApp 💬\n'
-          '• Integrações, Privacidade e IA personalizada',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          ElevatedButton(
-            onPressed: () {
-              // Setup Rápido: pular para o final do onboarding
-              Navigator.of(context).pop(); // Volta para a tela anterior (pode ser ajustado para pular para o dashboard)
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF8B8B8B),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(32),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 72),
+        Padding(
+          padding: const EdgeInsets.only(left: 24, right: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RichText(
+                text: TextSpan(
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF6B6B6B),
+                  ),
+                  children: [
+                    const TextSpan(text: 'Bem Vindo ao '),
+                    TextSpan(
+                      text: 'AIA',
+                      style: TextStyle(
+                        color: Color(0xFF95C5D9),
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            child: const Text('Setup Rápido'),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              // Setup Completo: avança para o próximo passo do onboarding
-              // O PageView será controlado pelo botão "Avançar" já existente, então aqui não faz nada.
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: const Color(0xFF8B8B8B),
-              side: const BorderSide(color: Color(0xFF8B8B8B), width: 1.5),
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(32),
+              const SizedBox(height: 8),
+              const Text(
+                'Seu assistente inteligente para organizar sua vida, viagens, agenda, veículos, alimentação, e muito mais.',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Color(0xFFB0B0B0),
+                  fontWeight: FontWeight.w400,
+                ),
               ),
-              textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-            ),
-            child: const Text('Setup Completo'),
+            ],
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 60, left: 24),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Image.asset(
+                'assets/airplane.png',
+                width: 400,
+                height: 320,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,36 +1,25 @@
 import 'package:flutter/material.dart';
 
 class OnboardingController extends ChangeNotifier {
-  final PageController pageController = PageController();
-  int currentPage = 0;
+  int _currentPage = 0;
+  int get currentPage => _currentPage;
 
   void nextPage() {
-    if (currentPage < onboardingStepsCount - 1) {
-      currentPage++;
-      pageController.animateToPage(
-        currentPage,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.ease,
-      );
+    if (_currentPage < onboardingStepsCount - 1) {
+      _currentPage++;
       notifyListeners();
     }
   }
 
   void previousPage() {
-    if (currentPage > 0) {
-      currentPage--;
-      pageController.animateToPage(
-        currentPage,
-        duration: const Duration(milliseconds: 400),
-        curve: Curves.ease,
-      );
+    if (_currentPage > 0) {
+      _currentPage--;
       notifyListeners();
     }
   }
 
   void jumpToPage(int page) {
-    currentPage = page;
-    pageController.jumpToPage(page);
+    _currentPage = page;
     notifyListeners();
   }
 

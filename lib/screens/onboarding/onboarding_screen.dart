@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'onboarding_controller.dart';
-
-// Importar os placeholders das etapas
 import 'steps/1_welcome_screen.dart';
 import 'steps/2_profile_screen.dart';
 import 'steps/3_travel_agent_screen.dart';
@@ -30,86 +27,114 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void initState() {
     super.initState();
     _controller = OnboardingController();
-    _controller.pageController.addListener(() {
-      final page = _controller.pageController.page?.round() ?? 0;
-      if (_controller.currentPage != page) {
-        setState(() {
-          _controller.currentPage = page;
-        });
-      }
+    _controller.addListener(() {
+      setState(() {});
     });
   }
 
   @override
   void dispose() {
-    _controller.pageController.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
-  List<Widget> get _steps => const [
-    WelcomeScreen(),
-    ProfileScreen(),
-    TravelAgentScreen(),
-    CalendarAgentScreen(),
-    VehicleAgentScreen(),
-    FoodAgentScreen(),
-    GmailAgentScreen(),
-    ReminderAgentScreen(),
-    WhatsAppAgentScreen(),
-    IntegrationsScreen(),
-    PrivacyScreen(),
-    PersonalizationScreen(),
-  ];
+  List<Widget> get _steps => [
+        const WelcomeScreen(),
+        const ProfileScreen(),
+        const TravelAgentScreen(),
+        const CalendarAgentScreen(),
+        const VehicleAgentScreen(),
+        const FoodAgentScreen(),
+        const GmailAgentScreen(),
+        const ReminderAgentScreen(),
+        const WhatsAppAgentScreen(),
+        const IntegrationsScreen(),
+        const PrivacyScreen(),
+        const PersonalizationScreen(),
+      ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F2),
-      body: SafeArea(
+      backgroundColor: Colors.transparent,
+      extendBody: true,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFFF8F9F9),
+              Color(0xFFEBF2F5),
+            ],
+          ),
+        ),
         child: Column(
           children: [
             Expanded(
-              child: PageView(
-                controller: _controller.pageController,
+              child: IndexedStack(
+                index: _controller.currentPage,
                 children: _steps,
-                physics: const ClampingScrollPhysics(),
               ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: SmoothPageIndicator(
-                controller: _controller.pageController,
-                count: _steps.length,
-                effect: const ExpandingDotsEffect(
-                  dotHeight: 12,
-                  dotWidth: 12,
-                  activeDotColor: Color(0xFF8B8B8B),
-                  dotColor: Color(0xFFE0E0E0),
-                  spacing: 8,
-                  expansionFactor: 2.2,
-                ),
-                onDotClicked: (index) {
-                  _controller.jumpToPage(index);
-                },
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 24, left: 24, right: 24),
+              padding: const EdgeInsets.only(bottom: 48, left: 16, right: 16, top: 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  if (_controller.currentPage > 0)
-                    ElevatedButton(
-                      onPressed: _controller.previousPage,
-                      child: const Text('Voltar'),
-                    )
-                  else
-                    const SizedBox(width: 80),
-                  ElevatedButton(
-                    onPressed: _controller.currentPage < _steps.length - 1
-                        ? _controller.nextPage
-                        : null,
-                    child: const Text('Avançar'),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFF3A3A3A),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Color(0xFF95C5D9), size: 18),
+                      onPressed: () {
+                        if (_controller.currentPage == 0) {
+                          Navigator.of(context).pop();
+                        } else {
+                          _controller.previousPage();
+                        }
+                      },
+                    ),
+                  ),
+                  Expanded(
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          _steps.length,
+                          (index) => AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            height: 8,
+                            width: _controller.currentPage == index ? 24 : 8,
+                            decoration: BoxDecoration(
+                              color: _controller.currentPage == index
+                                  ? const Color(0xFF95C5D9)
+                                  : const Color(0xFFD0D4D9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xFF3A3A3A),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_forward, color: Color(0xFF95C5D9), size: 18),
+                      onPressed: _controller.currentPage < _steps.length - 1
+                          ? _controller.nextPage
+                          : null,
+                    ),
                   ),
                 ],
               ),
