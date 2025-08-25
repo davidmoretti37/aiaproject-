@@ -3,24 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'services/simple_auth_service.dart';
 import 'activate_voice_ai_screen.dart';
 import 'clean_halo_orb.dart';
+import 'screens/onboarding/onboarding_screen.dart';
 
-// Placeholder para onboarding
-class OnboardingScreen extends StatelessWidget {
-  const OnboardingScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF2F2F2),
-      body: const Center(
-        child: Text(
-          'Onboarding personalizado em construção...',
-          style: TextStyle(color: Colors.black54, fontSize: 18),
-        ),
-      ),
-    );
-  }
-}
 
 class CleanGoogleLogin extends StatefulWidget {
   final VoidCallback onLoginSuccess;
@@ -103,9 +87,9 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
   }
 
   void _startOnboarding() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const OnboardingScreen()));
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+    );
   }
 
   void _skipLogin() {
@@ -177,7 +161,7 @@ class _CleanGoogleLoginState extends State<CleanGoogleLogin>
                           color: Color.fromARGB(17, 0, 0, 0),
                           blurRadius: 12,
                           spreadRadius: 0,
-                          offset: Offset(0, 16),
+                          offset: Offset(0, 2),
                         ),
                       ],
                     ),
