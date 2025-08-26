@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 class AIAApiService {
   // URL do backend AIA (atualizada para o novo Cloudflare Tunnel)
   static const String _baseUrl =
-      'https://associations-harris-greetings-es.trycloudflare.com';
+      'https://wr-worlds-placing-jc.trycloudflare.com';
 
   // Session management para Conversation Buffer
   static String? _currentSessionId;
@@ -16,9 +16,19 @@ class AIAApiService {
     String message, {
     String? userId,
     String? sessionId,
+    Map<String, double>? location,
   }) async {
     try {
       debugPrint('[AIA API] 🚀 Executando tarefa: $message');
+
+      final requestBody = {
+        'message': message,
+        'user_id': userId ?? 'aiaproject_user',
+        if (sessionId != null) 'session_id': sessionId,
+        if (_currentSessionId != null) 'session_id': _currentSessionId,
+        if (location != null) 'location': location,
+      };
+      debugPrint('[AIA API] 📤 JSON enviado ao backend: ${jsonEncode(requestBody)}');
 
       final response = await http.post(
         Uri.parse('$_baseUrl/chat'),
@@ -26,12 +36,7 @@ class AIAApiService {
           'Content-Type': 'application/json',
           'ngrok-skip-browser-warning': 'true', // Skip ngrok warning page
         },
-        body: jsonEncode({
-          'message': message,
-          'user_id': userId ?? 'aiaproject_user',
-          if (sessionId != null) 'session_id': sessionId,
-          if (_currentSessionId != null) 'session_id': _currentSessionId,
-        }),
+        body: jsonEncode(requestBody),
       );
 
       if (response.statusCode == 200) {

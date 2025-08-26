@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class GoogleOAuthService {
   static const String baseUrl =
-      'https://associations-harris-greetings-es.trycloudflare.com';
+      'https://wr-worlds-placing-jc.trycloudflare.com';
   static const String _sessionKey = 'google_oauth_session';
   static const String _authStatusKey = 'google_auth_status';
 

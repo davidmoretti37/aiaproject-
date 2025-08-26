@@ -726,9 +726,6 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                           }
                           return GestureDetector(
                             onTap: () async {
-                              print(
-                                '[AIA LOG] Orb tap. Estado: $_currentState',
-                              );
                               if (_isAIPlayingAudio)
                                 return; // Bloqueia interação enquanto IA fala
                               if (_currentState == OrbState.idle) {
