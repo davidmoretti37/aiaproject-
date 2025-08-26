@@ -706,9 +706,6 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                           _stateController,
                         ]),
                         builder: (context, child) {
-                          print(
-                            '[AIA LOG] AnimatedBuilder rebuild. Estado: $_currentState',
-                          );
                           double finalScale = _breathingScale.value;
                           if (_currentState == OrbState.listening) {
                             finalScale *= (1.0 + (_currentSoundLevel * 0.3));

@@ -9,6 +9,7 @@ import 'audio_service.dart';
 import 'aia_api_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
+import 'ifood_agent_tool.dart';
 
 typedef UserInputTranscriptionCompletedCallback = void Function(String transcript);
 typedef AITranscriptDeltaCallback = void Function(String delta);
@@ -45,6 +46,9 @@ class OpenAIRealtimeService {
 
   final Dio _dio = Dio();
 
+  // iFood agent tool instance
+  final IfoodAgentTool _ifoodAgentTool = IfoodAgentTool();
+
 
 
   // Configuração de ICE servers para WebRTC
@@ -77,7 +81,6 @@ class OpenAIRealtimeService {
       debugPrint('[OpenAI Realtime] Já existe uma conexão em andamento');
       return false;
     }
-
     _isProcessingConnection = true;
 
     try {
@@ -124,6 +127,34 @@ class OpenAIRealtimeService {
       debugPrint("[OpenAI Realtime] Erro ao iniciar conexão WebRTC: $e");
       _isProcessingConnection = false;
       return false;
+    }
+  }
+
+  /// Search iFood restaurants by category and location using the iFood agent tool.
+  /// Example usage:
+  ///   await searchIfoodRestaurants(category: 'pizza', latitude: -23.55, longitude: -46.63);
+  Future<List<Restaurant>> searchIfoodRestaurants({
+    required String category,
+    required double latitude,
+    required double longitude,
+  }) async {
+    // Override with mock São Paulo coordinates for all calls (for testing)
+    double lat = -23.5505;
+    double lng = -46.6333;
+    debugPrint('[AIA][TOOL][MOCK] Overriding coordinates to São Paulo: latitude=$lat, longitude=$lng');
+    debugPrint('[AIA][TOOL] search_ifood_restaurants called with category="$category", latitude=$lat, longitude=$lng');
+    try {
+      final restaurants = await _ifoodAgentTool.getRestaurantsByCategory(
+        category: category,
+        latitude: lat,
+        longitude: lng,
+      );
+      debugPrint('[AIA][TOOL] search_ifood_restaurants result: ${restaurants.length} restaurants found');
+      // You can process or return the list as needed
+      return restaurants;
+    } catch (e) {
+      debugPrint('[AIA][TOOL] Error fetching iFood restaurants: $e');
+      return [];
     }
   }
 
@@ -408,6 +439,27 @@ class OpenAIRealtimeService {
             } catch (e) {
               debugPrint('[OpenAI Realtime] Erro ao processar argumentos do Uber: $e');
             }
+          } else if (functionName == 'search_ifood_restaurants' && arguments != null) {
+            try {
+              final args = jsonDecode(arguments);
+              final category = args['category'] as String?;
+              final latitude = (args['latitude'] as num?)?.toDouble();
+              final longitude = (args['longitude'] as num?)?.toDouble();
+              debugPrint('[AIA][TOOL] Handler: search_ifood_restaurants with category="$category", latitude=$latitude, longitude=$longitude');
+              if (category != null && latitude != null && longitude != null) {
+                final restaurants = await searchIfoodRestaurants(
+                  category: category,
+                  latitude: latitude,
+                  longitude: longitude,
+                );
+                debugPrint('[AIA][TOOL] Handler: search_ifood_restaurants returned ${restaurants.length} restaurants');
+                // Optionally: send a message or update UI with the results here
+              } else {
+                debugPrint('[AIA][TOOL] Handler: search_ifood_restaurants missing arguments');
+              }
+            } catch (e) {
+              debugPrint('[AIA][TOOL] Handler: Error processing search_ifood_restaurants: $e');
+            }
           }
           break;
 
@@ -499,6 +551,15 @@ Você é a **AIA**, uma assistente de IA conversacional que atua como coordenado
 - **Detecção automática**: Reconhece pedidos de "Uber Black", "premium", "executivo"
 - **VOCÊ TEM ESTA CAPACIDADE DIRETAMENTE DISPONÍVEL**
 
+### 🍔 **iFood** - Busca de Restaurantes e Delivery 🆕 (NOVO!)
+- Busca de restaurantes por tipo de comida e localização diretamente no app
+- Integração com iFood (principal plataforma brasileira)
+- Geração de deeplinks para apps móveis
+- Informações de entrega, preços e avaliações
+- Suporte a coordenadas GPS para busca precisa
+- Foco no mercado brasileiro de delivery
+- **VOCÊ TEM ESTA CAPACIDADE DIRETAMENTE DISPONÍVEL**
+
 ### 📱 **WhatsApp Agent** - Automação WhatsApp ✨ (MELHORADO)
 - Envio de mensagens, mídia e documentos
 - Criação e gerenciamento completo de grupos
@@ -514,6 +575,12 @@ Você é a **AIA**, uma assistente de IA conversacional que atua como coordenado
 - Informações de entrega, preços e avaliações
 - Suporte a coordenadas GPS para busca precisa
 - Foco no mercado brasileiro de delivery
+- **VOCÊ TEM ACESSO DIRETO À LOCALIZAÇÃO ATUAL DO USUÁRIO (latitude e longitude) PARA BUSCAS PRECISAS**
+
+## CAPACIDADES ESPECIAIS
+
+- Você tem acesso direto à localização atual do usuário (latitude e longitude) para buscas de restaurantes, transporte, e outros serviços baseados em localização.
+- Use sempre a localização do usuário para fornecer resultados mais relevantes e precisos.
 
 ## PRINCÍPIOS FUNDAMENTAIS
 - **Conversa Natural**: Mantenha sempre um tom conversacional, empático e prestativo
@@ -667,7 +734,7 @@ Lembre-se: você é a coordenadora inteligente de 7 agentes especializados que g
                 },
                 "required": ["message"]
               }
-              },
+            },
             {
               "type": "function",
               "name": "create_uber_ride",
@@ -686,9 +753,30 @@ Lembre-se: você é a coordenadora inteligente de 7 agentes especializados que g
                 },
                 "required": ["destination"]
               }
+            },
+            {
+              "type": "function",
+              "name": "search_ifood_restaurants",
+              "description": "Busca restaurantes no iFood por tipo de comida e localização diretamente no app, sem usar a API do backend.",
+              "parameters": {
+                "type": "object",
+                "properties": {
+                  "category": {
+                    "type": "string",
+                    "description": "Tipo de comida desejada (ex: pizza, hamburguer, sushi, etc.)"
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "description": "Latitude atual do usuário"
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "description": "Longitude atual do usuário"
+                  }
+                },
+                "required": ["category", "latitude", "longitude"]
+              }
             }
-            
-            
           ]
         }
       };
