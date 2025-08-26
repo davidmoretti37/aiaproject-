@@ -243,18 +243,7 @@ class _FoodDeliveryScreenState extends State<FoodDeliveryScreen> {
   Future<void> _openDeeplink(String deeplink) async {
     try {
       final uri = Uri.parse(deeplink);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        // fallback: try launching as web url if scheme is not supported
-        if (deeplink.startsWith('ifood://')) {
-          final web = _convertIfoodToWeb(deeplink);
-          final webUri = Uri.parse(web);
-          if (await canLaunchUrl(webUri)) {
-            await launchUrl(webUri, mode: LaunchMode.externalApplication);
-          }
-        }
-      }
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (_) {
       // ignore for now
     }
