@@ -10,6 +10,8 @@ import 'aia_api_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
 import 'ifood_agent_tool.dart';
+import 'navigator_service.dart';
+import '../screens/food_delivery_screen.dart';
 
 typedef UserInputTranscriptionCompletedCallback = void Function(String transcript);
 typedef AITranscriptDeltaCallback = void Function(String delta);
@@ -138,10 +140,8 @@ class OpenAIRealtimeService {
     required double latitude,
     required double longitude,
   }) async {
-    // Override with mock São Paulo coordinates for all calls (for testing)
-    double lat = -23.5505;
-    double lng = -46.6333;
-    debugPrint('[AIA][TOOL][MOCK] Overriding coordinates to São Paulo: latitude=$lat, longitude=$lng');
+    final double lat = latitude;
+    final double lng = longitude;
     debugPrint('[AIA][TOOL] search_ifood_restaurants called with category="$category", latitude=$lat, longitude=$lng');
     try {
       final restaurants = await _ifoodAgentTool.getRestaurantsByCategory(
@@ -150,7 +150,19 @@ class OpenAIRealtimeService {
         longitude: lng,
       );
       debugPrint('[AIA][TOOL] search_ifood_restaurants result: ${restaurants.length} restaurants found');
-      // You can process or return the list as needed
+      // Navigate to results screen to display restaurants
+      try {
+        await NavigatorService.pushMaterial(
+          FoodDeliveryScreen(
+            category: category,
+            latitude: lat,
+            longitude: lng,
+          ),
+        );
+        debugPrint('[AIA][TOOL] Navigated to FoodDeliveryScreen');
+      } catch (e) {
+        debugPrint('[AIA][TOOL] Navigation error: $e');
+      }
       return restaurants;
     } catch (e) {
       debugPrint('[AIA][TOOL] Error fetching iFood restaurants: $e');

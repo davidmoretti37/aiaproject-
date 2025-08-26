@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'clean_app_flow.dart';
 import 'services/simple_auth_service.dart';
+import 'services/navigator_service.dart';
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -28,6 +29,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'AIA Experience',
+      navigatorKey: NavigatorService.navigatorKey,
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
