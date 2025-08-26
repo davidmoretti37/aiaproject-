@@ -8,7 +8,6 @@ import 'ai_service.dart';
 import 'widgets/aia_video_player.dart';
 import 'widgets/bottom_navigation.dart';
 import 'screens/featured_screen.dart';
-import 'screens/food_delivery_mock_screen.dart';
 import 'screens/aia_chat_screen.dart';
 import 'screens/settings_screen.dart';
 import 'screens/reminders_screen.dart';
@@ -575,19 +574,6 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFe6e8ec),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => FoodDeliveryMockScreen(),
-            ),
-          );
-        },
-        icon: const Icon(Icons.fastfood),
-        label: const Text('Comida (Mock)'),
-        backgroundColor: const Color(0xFF3DB6D4),
-      ),
       body: AnimatedBuilder(
         animation: _fadeInOpacity,
         builder: (context, child) {
@@ -633,21 +619,6 @@ class _CleanHaloOrbState extends State<CleanHaloOrb>
                         ),
                       ),
                       const Spacer(),
-                      Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: IconButton(
-                          icon: const Icon(Icons.fastfood, color: Color(0xFF3DB6D4), size: 28),
-                          tooltip: 'Ver restaurantes mockados',
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => FoodDeliveryMockScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
                       Padding(
                         padding: const EdgeInsets.only(right: 8),
                         child: CircleAvatar(

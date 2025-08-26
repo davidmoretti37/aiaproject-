@@ -493,20 +493,36 @@ class OpenAIRealtimeService {
             try {
               final args = jsonDecode(arguments);
               final category = args['category'] as String?;
-              final latitude = (args['latitude'] as num?)?.toDouble();
-              final longitude = (args['longitude'] as num?)?.toDouble();
+              double? latitude = (args['latitude'] as num?)?.toDouble();
+              double? longitude = (args['longitude'] as num?)?.toDouble();
               debugPrint('[AIA][TOOL] Handler: search_ifood_restaurants with category="$category", latitude=$latitude, longitude=$longitude');
-              if (category != null && latitude != null && longitude != null) {
-                final restaurants = await searchIfoodRestaurants(
-                  category: category,
-                  latitude: latitude,
-                  longitude: longitude,
-                );
-                debugPrint('[AIA][TOOL] Handler: search_ifood_restaurants returned ${restaurants.length} restaurants');
-                // Optionally: send a message or update UI with the results here
-              } else {
-                debugPrint('[AIA][TOOL] Handler: search_ifood_restaurants missing arguments');
+
+              if (category == null || category.trim().isEmpty) {
+                debugPrint('[AIA][TOOL] Handler: search_ifood_restaurants missing category');
+                break;
               }
+
+              // Treat 0.0 as invalid/missing
+              bool invalidCoords = latitude == null || longitude == null || latitude == 0.0 || longitude == 0.0;
+              if (invalidCoords) {
+                final loc = await getCurrentLocation();
+                if (loc != null) {
+                  latitude = loc['latitude'];
+                  longitude = loc['longitude'];
+                  debugPrint('[AIA][TOOL] Handler: Using device location latitude=$latitude, longitude=$longitude');
+                } else {
+                  debugPrint('[AIA][TOOL] Handler: Location unavailable - no mock will be used');
+                  _enviarMensagemDoSistema('Não consegui obter sua localização para buscar restaurantes agora.');
+                  break;
+                }
+              }
+
+              final restaurants = await searchIfoodRestaurants(
+                category: category,
+                latitude: latitude!,
+                longitude: longitude!,
+              );
+              debugPrint('[AIA][TOOL] Handler: search_ifood_restaurants returned ${restaurants.length} restaurants');
             } catch (e) {
               debugPrint('[AIA][TOOL] Handler: Error processing search_ifood_restaurants: $e');
             }
@@ -850,10 +866,11 @@ Lembre-se: você é a coordenadora inteligente de 7 agentes especializados que g
     try {
       debugPrint('[OpenAI Realtime] 🚀 Iniciando conversa com agente: $message');
 
-      // Obter localização do usuário
-      // final location = await getCurrentLocation();
-      // MOCK: localização fixa de São Paulo para testes
-      final location = {'latitude': -23.5505, 'longitude': -46.6333};
+      // Obter localização do usuário (sem mock)
+      final location = await getCurrentLocation();
+      if (location == null) {
+        debugPrint('[OpenAI Realtime] ⚠️ Localização indisponível no momento - não será usado mock');
+      }
 
       final result = await AIAApiService.executeTask(
         message,
