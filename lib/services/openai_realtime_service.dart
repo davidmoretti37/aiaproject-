@@ -9,11 +9,49 @@ import 'audio_service.dart';
 import 'aia_api_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
+import 'package:geolocator/geolocator.dart';
 
 typedef UserInputTranscriptionCompletedCallback = void Function(String transcript);
 typedef AITranscriptDeltaCallback = void Function(String delta);
 
 class OpenAIRealtimeService {
+
+  /// Obtém a localização atual do usuário (latitude/longitude)
+  Future<Map<String, double>?> getCurrentLocation() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('[OpenAIRealtimeService] Serviço de localização desativado.');
+        return null;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          debugPrint('[OpenAIRealtimeService] Permissão de localização negada.');
+          return null;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        debugPrint('[OpenAIRealtimeService] Permissão de localização permanentemente negada.');
+        return null;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      return {
+        'latitude': position.latitude,
+        'longitude': position.longitude,
+      };
+    } catch (e) {
+      debugPrint('[OpenAIRealtimeService] Erro ao obter localização: $e');
+      return null;
+    }
+  }
   RTCPeerConnection? _peerConnection;
   RTCDataChannel? _dataChannel;
   MediaStream? _localStream;
@@ -456,6 +494,9 @@ class OpenAIRealtimeService {
       String instructions = '''
 # Prompt - AIA (Assistente Principal Multi-Agente) - AIAPROJECT
 
+## INFORMAÇÃO IMPORTANTE SOBRE LOCALIZAÇÃO
+Você SEMPRE terá acesso à localização atual do usuário (latitude e longitude) automaticamente, enviada pelo app. NÃO pergunte ao usuário por sua localização se ela já estiver disponível no contexto da requisição. Use a localização recebida para todas as tarefas que exigem posição geográfica.
+
 ## IDENTIDADE E CONTEXTO
 Você é a **AIA**, uma assistente de IA conversacional que atua como coordenadora principal em um sistema multi-agente do AIAPROJECT. Você se comunica exclusivamente por áudio em português brasileiro, sendo a interface principal entre o usuário e 7 agentes especializados.
 
@@ -708,30 +749,39 @@ Lembre-se: você é a coordenadora inteligente de 7 agentes especializados que g
   Future<void> _iniciarConversaComAgente(String message, String intent) async {
     try {
       debugPrint('[OpenAI Realtime] 🚀 Iniciando conversa com agente: $message');
-      
-      final result = await AIAApiService.executeTask(message, userId: userName);
-      
+
+      // Obter localização do usuário
+      // final location = await getCurrentLocation();
+      // MOCK: localização fixa de São Paulo para testes
+      final location = {'latitude': -23.5505, 'longitude': -46.6333};
+
+      final result = await AIAApiService.executeTask(
+        message,
+        userId: userName,
+        location: location,
+      );
+
       if (result != null && result['success'] == true) {
         final response = result['response'] as String? ?? result['message'] as String? ?? 'Tarefa iniciada';
         final agentUsed = result['agent_used'] as String? ?? 'unknown';
         final sessionId = result['session_id'] as String?;
-        
+
         // Configurar estado da conversa apenas se há session_id
         if (sessionId != null) {
           _activeAgentId = agentUsed;
           _activeSessionId = sessionId;
           _isInAgentConversation = true;
-          
+
           debugPrint('[OpenAI Realtime] 🔄 Conversa iniciada com agente: $agentUsed');
           debugPrint('[OpenAI Realtime] 📊 Session ID: $sessionId');
         } else {
           debugPrint('[OpenAI Realtime] ✅ Resposta direta do agente: $agentUsed');
           _finalizarConversaComAgente();
         }
-        
+
         // Repassa resposta do agente para o usuário
         _enviarMensagemDoSistema(response);
-        
+
       } else {
         debugPrint('[OpenAI Realtime] ❌ Falha ao iniciar conversa com agente');
         _enviarMensagemDoSistema('Não foi possível executar a tarefa solicitada no momento.');

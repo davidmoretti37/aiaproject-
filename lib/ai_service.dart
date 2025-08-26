@@ -7,7 +7,7 @@ class AIService {
   // Backend simples local (fallback apenas)
   static const String baseUrl = String.fromEnvironment(
     'BACKEND_URL',
-    defaultValue: 'https://associations-harris-greetings-es.trycloudflare.com',
+    defaultValue: 'https://wr-worlds-placing-jc.trycloudflare.com',
   );
 
   // Initialize Google Auth Service

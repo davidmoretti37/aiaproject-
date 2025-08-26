@@ -50,7 +50,7 @@ class ProfessionalAudioService {
 
   // Configuration
   static const String _serverUrl =
-      'https://associations-harris-greetings-es.trycloudflare.com';
+      'https://wr-worlds-placing-jc.trycloudflare.com';
   static const int _sampleRate = 16000;
 
   /// Initialize the professional audio system
