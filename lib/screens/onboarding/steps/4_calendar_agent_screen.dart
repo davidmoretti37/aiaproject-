@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../styles.dart';
+import 'onboarding_step_layout.dart';
 
 class CalendarAgentScreen extends StatefulWidget {
   const CalendarAgentScreen({Key? key}) : super(key: key);
@@ -9,8 +12,6 @@ class CalendarAgentScreen extends StatefulWidget {
 
 class _CalendarAgentScreenState extends State<CalendarAgentScreen> {
   final _formKey = GlobalKey<FormState>();
-  String _googleAccount = '';
-  String _mainCalendar = '';
   TimeOfDay _workStart = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _workEnd = const TimeOfDay(hour: 18, minute: 0);
   List<String> _workDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex'];
@@ -20,184 +21,190 @@ class _CalendarAgentScreenState extends State<CalendarAgentScreen> {
   String _virtualPref = 'Sempre';
   final _frequentContactsController = TextEditingController();
 
-  InputDecoration get _inputDecoration => InputDecoration(
-        filled: true,
-        fillColor: const Color(0xFFF9FAFB),
-        contentPadding: const EdgeInsets.symmetric(vertical: 18, horizontal: 18),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: Colors.grey[200]!, width: 1.2),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide(color: Colors.grey[200]!, width: 1.2),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: const BorderSide(color: Color(0xFF95C5D9), width: 1.5),
-        ),
-        labelStyle: const TextStyle(
-          color: Color(0xFFB0B0B0),
-          fontWeight: FontWeight.w500,
-          fontSize: 14,
-          letterSpacing: 0.2,
-        ),
-        floatingLabelStyle: const TextStyle(
-          color: Color(0xFF95C5D9),
-          fontWeight: FontWeight.w600,
-          fontSize: 14,
-          letterSpacing: 0.2,
-        ),
-      );
-
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.only(top: 90, left: 24, right: 24, bottom: 0),
-      children: [
-        RichText(
-          text: TextSpan(
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF6B6B6B),
-            ),
-            children: [
-              const TextSpan(text: 'Configurações de '),
-              TextSpan(
-                text: 'Agenda',
-                style: TextStyle(
-                  color: Color(0xFF95C5D9),
-                  fontWeight: FontWeight.w700,
+    return OnboardingStepLayout(
+      child: ListView(
+        padding: const EdgeInsets.only(top: 90, left: 24, right: 24, bottom: 150),
+        children: [
+          RichText(
+            text: TextSpan(
+              style: OnboardingStyles.titleStyle,
+              children: [
+                const TextSpan(text: 'Configurações de '),
+                TextSpan(
+                  text: 'Agenda',
+                  style: OnboardingStyles.titleStyle.copyWith(
+                    color: const Color(0xFF95C5D9),
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          'Conecte sua conta Google e defina suas preferências de calendário.',
-          style: TextStyle(
-            fontSize: 16,
-            color: Color(0xFFB0B0B0),
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        const SizedBox(height: 32),
-        Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextFormField(
-                decoration: _inputDecoration.copyWith(labelText: 'Conta Google conectada'),
-                onChanged: (v) => _googleAccount = v,
-              ),
-              const SizedBox(height: 22),
-              TextFormField(
-                decoration: _inputDecoration.copyWith(labelText: 'Calendário principal'),
-                onChanged: (v) => _mainCalendar = v,
-              ),
-              const SizedBox(height: 32),
-              const Text('Horário de trabalho', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF6B6B6B))),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('Início: ${_workStart.format(context)}'),
-                      onTap: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: _workStart,
-                        );
-                        if (picked != null) setState(() => _workStart = picked);
-                      },
-                    ),
+              ],
+            ),
+          ).animate().fade(duration: 500.ms).slideX(),
+          const SizedBox(height: 10),
+          Text(
+            'Conecte sua conta Google e defina suas preferências de calendário.',
+            style: OnboardingStyles.subtitleStyle,
+          ).animate().fade(duration: 500.ms).slideX(delay: 200.ms),
+          const SizedBox(height: 32),
+          Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Jornada de Trabalho',
+                  style: OnboardingStyles.subtitleStyle.copyWith(
+                    color: const Color(0xFF6B6B6B),
+                    fontWeight: FontWeight.bold,
                   ),
-                  Expanded(
-                    child: ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('Fim: ${_workEnd.format(context)}'),
-                      onTap: () async {
-                        final picked = await showTimePicker(
-                          context: context,
-                          initialTime: _workEnd,
-                        );
-                        if (picked != null) setState(() => _workEnd = picked);
-                      },
+                ).animate().fade(duration: 500.ms).slideX(delay: 400.ms),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: _workStart,
+                            builder: (context, child) {
+                              return Theme(
+                                data: ThemeData.light().copyWith(
+                                  colorScheme: const ColorScheme.light(
+                                    primary: Color(0xFF95C5D9),
+                                    onPrimary: Colors.white,
+                                    surface: Colors.white,
+                                    onSurface: Colors.black,
+                                  ),
+                                ),
+                                child: child!,
+                              );
+                            },
+                          );
+                          if (picked != null) setState(() => _workStart = picked);
+                        },
+                        child: InputDecorator(
+                          decoration: OnboardingStyles.inputDecoration('Início'),
+                          child: Text(_workStart.format(context)),
+                        ),
+                      ),
                     ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () async {
+                          final picked = await showTimePicker(
+                            context: context,
+                            initialTime: _workEnd,
+                            builder: (context, child) {
+                              return Theme(
+                                data: ThemeData.light().copyWith(
+                                  colorScheme: const ColorScheme.light(
+                                    primary: Color(0xFF95C5D9),
+                                    onPrimary: Colors.white,
+                                    surface: Colors.white,
+                                    onSurface: Colors.black,
+                                  ),
+                                ),
+                                child: child!,
+                              );
+                            },
+                          );
+                          if (picked != null) setState(() => _workEnd = picked);
+                        },
+                        child: InputDecorator(
+                          decoration: OnboardingStyles.inputDecoration('Fim'),
+                          child: Text(_workEnd.format(context)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ).animate().fade(duration: 500.ms).slideX(delay: 500.ms),
+                const SizedBox(height: 22),
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final day in ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'])
+                      FilterChip(
+                        label: Text(
+                          day,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _workDays.contains(day) ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        selected: _workDays.contains(day),
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              _workDays.add(day);
+                            } else {
+                              _workDays.remove(day);
+                            }
+                          });
+                        },
+                        selectedColor: const Color(0xFF95C5D9),
+                        backgroundColor: const Color(0xFFEBF2F5),
+                        checkmarkColor: Colors.white,
+                      ),
+                  ],
+                ).animate().fade(duration: 500.ms).slideX(delay: 600.ms),
+                const SizedBox(height: 32),
+                Text(
+                  'Preferências de Reunião',
+                  style: OnboardingStyles.subtitleStyle.copyWith(
+                    color: const Color(0xFF6B6B6B),
+                    fontWeight: FontWeight.bold,
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  for (final day in ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'])
-                    FilterChip(
-                      label: Text(day),
-                      selected: _workDays.contains(day),
-                      onSelected: (selected) {
-                        setState(() {
-                          if (selected) {
-                            _workDays.add(day);
-                          } else {
-                            _workDays.remove(day);
-                          }
-                        });
-                      },
-                    ),
-                ],
-              ),
-              const SizedBox(height: 22),
-              DropdownButtonFormField<String>(
-                value: _meetingDuration,
-                decoration: _inputDecoration.copyWith(labelText: 'Duração padrão de reuniões'),
-                items: const [
-                  DropdownMenuItem(value: '30min', child: Text('30min')),
-                  DropdownMenuItem(value: '1h', child: Text('1h')),
-                ],
-                onChanged: (v) => setState(() => _meetingDuration = v ?? '1h'),
-              ),
-              const SizedBox(height: 22),
-              DropdownButtonFormField<String>(
-                value: _buffer,
-                decoration: _inputDecoration.copyWith(labelText: 'Buffer entre reuniões'),
-                items: const [
-                  DropdownMenuItem(value: '0', child: Text('0')),
-                  DropdownMenuItem(value: '15min', child: Text('15min')),
-                  DropdownMenuItem(value: '30min', child: Text('30min')),
-                ],
-                onChanged: (v) => setState(() => _buffer = v ?? '15min'),
-              ),
-              const SizedBox(height: 22),
-              TextFormField(
-                decoration: _inputDecoration.copyWith(labelText: 'Local de trabalho padrão'),
-                onChanged: (v) => _workLocation = v,
-              ),
-              const SizedBox(height: 22),
-              DropdownButtonFormField<String>(
-                value: _virtualPref,
-                decoration: _inputDecoration.copyWith(labelText: 'Preferência para reuniões virtuais'),
-                items: const [
-                  DropdownMenuItem(value: 'Sempre', child: Text('Sempre')),
-                  DropdownMenuItem(value: 'Às vezes', child: Text('Às vezes')),
-                  DropdownMenuItem(value: 'Nunca', child: Text('Nunca')),
-                ],
-                onChanged: (v) => setState(() => _virtualPref = v ?? 'Sempre'),
-              ),
-              const SizedBox(height: 22),
-              TextFormField(
-                controller: _frequentContactsController,
-                decoration: _inputDecoration.copyWith(labelText: 'Contatos frequentes (emails)'),
-              ),
-              const SizedBox(height: 22),
-            ],
+                ).animate().fade(duration: 500.ms).slideX(delay: 700.ms),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<String>(
+                  value: _meetingDuration,
+                  decoration: OnboardingStyles.inputDecoration('Duração Padrão'),
+                  items: const [
+                    DropdownMenuItem(value: '30min', child: Text('30min')),
+                    DropdownMenuItem(value: '1h', child: Text('1h')),
+                  ],
+                  onChanged: (v) => setState(() => _meetingDuration = v ?? '1h'),
+                ).animate().fade(duration: 500.ms).slideX(delay: 800.ms),
+                const SizedBox(height: 22),
+                DropdownButtonFormField<String>(
+                  value: _buffer,
+                  decoration: OnboardingStyles.inputDecoration('Buffer Entre Reuniões'),
+                  items: const [
+                    DropdownMenuItem(value: '0', child: Text('0')),
+                    DropdownMenuItem(value: '15min', child: Text('15min')),
+                    DropdownMenuItem(value: '30min', child: Text('30min')),
+                  ],
+                  onChanged: (v) => setState(() => _buffer = v ?? '15min'),
+                ).animate().fade(duration: 500.ms).slideX(delay: 900.ms),
+                const SizedBox(height: 22),
+                TextFormField(
+                  decoration: OnboardingStyles.inputDecoration('Local de Trabalho Padrão'),
+                  onChanged: (v) => _workLocation = v,
+                ).animate().fade(duration: 500.ms).slideX(delay: 1000.ms),
+                const SizedBox(height: 22),
+                DropdownButtonFormField<String>(
+                  value: _virtualPref,
+                  decoration: OnboardingStyles.inputDecoration('Preferência para Reuniões Virtuais'),
+                  items: const [
+                    DropdownMenuItem(value: 'Sempre', child: Text('Sempre')),
+                    DropdownMenuItem(value: 'Às vezes', child: Text('Às vezes')),
+                    DropdownMenuItem(value: 'Nunca', child: Text('Nunca')),
+                  ],
+                  onChanged: (v) => setState(() => _virtualPref = v ?? 'Sempre'),
+                ).animate().fade(duration: 500.ms).slideX(delay: 1100.ms),
+                const SizedBox(height: 22),
+                TextFormField(
+                  controller: _frequentContactsController,
+                  decoration: OnboardingStyles.inputDecoration('Contatos Frequentes (emails)'),
+                ).animate().fade(duration: 500.ms).slideX(delay: 1200.ms),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

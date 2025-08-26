@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../styles.dart';
+import 'onboarding_step_layout.dart';
 
 class IntegrationsScreen extends StatefulWidget {
   const IntegrationsScreen({Key? key}) : super(key: key);
@@ -16,67 +19,76 @@ class _IntegrationsScreenState extends State<IntegrationsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.only(top: 90, left: 24, right: 24, bottom: 0),
-      children: [
-        RichText(
-          text: TextSpan(
-            style: const TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF6B6B6B),
-            ),
-            children: [
-              const TextSpan(text: 'Tela de '),
-              TextSpan(
-                text: 'Integrações',
-                style: TextStyle(
-                  color: Color(0xFF95C5D9),
-                  fontWeight: FontWeight.w700,
+    return OnboardingStepLayout(
+      child: ListView(
+        padding: const EdgeInsets.only(top: 90, left: 24, right: 24, bottom: 150),
+        children: [
+          RichText(
+            text: TextSpan(
+              style: OnboardingStyles.titleStyle,
+              children: [
+                const TextSpan(text: 'Tela de '),
+                TextSpan(
+                  text: 'Integrações',
+                  style: OnboardingStyles.titleStyle.copyWith(
+                    color: const Color(0xFF95C5D9),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
+          ).animate().fade(duration: 500.ms).slideX(),
+          const SizedBox(height: 10),
+          Text(
+            'Conecte suas contas e serviços para uma experiência completa.',
+            style: OnboardingStyles.subtitleStyle,
+          ).animate().fade(duration: 500.ms).slideX(delay: 200.ms),
+          const SizedBox(height: 32),
+          Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                SwitchListTile(
+                  title: Text(
+                    'Google Account (Calendar, Gmail)',
+                    style: OnboardingStyles.subtitleStyle,
+                  ),
+                  value: _googleConnected,
+                  onChanged: (v) => setState(() => _googleConnected = v),
+                  activeColor: const Color(0xFF95C5D9),
+                ).animate().fade(duration: 500.ms).slideX(delay: 400.ms),
+                SwitchListTile(
+                  title: Text(
+                    'WhatsApp Business API',
+                    style: OnboardingStyles.subtitleStyle,
+                  ),
+                  value: _whatsappConnected,
+                  onChanged: (v) => setState(() => _whatsappConnected = v),
+                  activeColor: const Color(0xFF95C5D9),
+                ).animate().fade(duration: 500.ms).slideX(delay: 500.ms),
+                SwitchListTile(
+                  title: Text(
+                    'LATAM Pass',
+                    style: OnboardingStyles.subtitleStyle,
+                  ),
+                  value: _latamConnected,
+                  onChanged: (v) => setState(() => _latamConnected = v),
+                  activeColor: const Color(0xFF95C5D9),
+                ).animate().fade(duration: 500.ms).slideX(delay: 600.ms),
+                SwitchListTile(
+                  title: Text(
+                    'Smiles/GOL',
+                    style: OnboardingStyles.subtitleStyle,
+                  ),
+                  value: _smilesConnected,
+                  onChanged: (v) => setState(() => _smilesConnected = v),
+                  activeColor: const Color(0xFF95C5D9),
+                ).animate().fade(duration: 500.ms).slideX(delay: 700.ms),
+                // Adicione mais integrações conforme necessário
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 10),
-        const Text(
-          'Conecte suas contas e serviços para uma experiência completa.',
-          style: TextStyle(
-            fontSize: 16,
-            color: Color(0xFFB0B0B0),
-            fontWeight: FontWeight.w400,
-          ),
-        ),
-        const SizedBox(height: 32),
-        Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              SwitchListTile(
-                title: const Text('Google Account (Calendar, Gmail)'),
-                value: _googleConnected,
-                onChanged: (v) => setState(() => _googleConnected = v),
-              ),
-              SwitchListTile(
-                title: const Text('WhatsApp Business API'),
-                value: _whatsappConnected,
-                onChanged: (v) => setState(() => _whatsappConnected = v),
-              ),
-              SwitchListTile(
-                title: const Text('LATAM Pass'),
-                value: _latamConnected,
-                onChanged: (v) => setState(() => _latamConnected = v),
-              ),
-              SwitchListTile(
-                title: const Text('Smiles/GOL'),
-                value: _smilesConnected,
-                onChanged: (v) => setState(() => _smilesConnected = v),
-              ),
-              // Adicione mais integrações conforme necessário
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

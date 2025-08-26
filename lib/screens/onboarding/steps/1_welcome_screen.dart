@@ -1,5 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../styles.dart';
+import 'onboarding_step_layout.dart';
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
@@ -40,7 +44,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
       if (_pageController.hasClients) {
         _pageController.animateToPage(
           _currentPage,
-          duration: const Duration(milliseconds: 800),
+          duration: const Duration(milliseconds: 1000),
           curve: Curves.easeInOut,
         );
       }
@@ -56,70 +60,75 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 100),
-        Padding(
-          padding: const EdgeInsets.only(left: 30, right: 30),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF6B6B6B),
-                  ),
-                  children: [
-                    const TextSpan(text: 'Bem Vindo ao '),
-                    TextSpan(
-                      text: 'AIA',
-                      style: TextStyle(
-                        color: Color(0xFF95C5D9),
-                        fontWeight: FontWeight.w700,
+    return OnboardingStepLayout(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 100),
+          Padding(
+            padding: const EdgeInsets.only(left: 30, right: 30),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  text: TextSpan(
+                    style: OnboardingStyles.titleStyle,
+                    children: [
+                      const TextSpan(text: 'Bem Vindo ao '),
+                      TextSpan(
+                        text: 'AIA',
+                        style: OnboardingStyles.titleStyle.copyWith(
+                          color: const Color(0xFF95C5D9),
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Seu assistente inteligente para organizar sua vida, viagens, agenda, veículos, alimentação, e muito mais.',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFFB0B0B0),
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ],
+                    ],
+                  ),
+                ).animate().fade(duration: 500.ms).slideX(),
+                const SizedBox(height: 8),
+                Text(
+                  'Seu assistente inteligente para organizar sua vida, viagens, agenda, veículos, alimentação, e muito mais.',
+                  style: OnboardingStyles.subtitleStyle,
+                ).animate().fade(duration: 500.ms).slideX(delay: 200.ms),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 60, left: 24),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                height: 320,
-                child: PageView.builder(
-                  controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: _images.length,
-                  itemBuilder: (context, index) {
-                    return Image.asset(
-                      _images[index],
-                      fit: BoxFit.contain,
-                    );
-                  },
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 150, left: 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: SizedBox(
+                  height: 350,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: _images.length,
+                    itemBuilder: (context, index) {
+                      return Image.asset(_images[index], fit: BoxFit.contain)
+                          .animate(
+                            onPlay: (controller) => controller.repeat(),
+                          )
+                          .moveY(
+                            begin: -10,
+                            end: 10,
+                            duration: const Duration(seconds: 2),
+                            curve: Curves.easeInOut,
+                          )
+                          .then()
+                          .moveY(
+                            begin: 10,
+                            end: -10,
+                            duration: const Duration(seconds: 2),
+                            curve: Curves.easeInOut,
+                          );
+                    },
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

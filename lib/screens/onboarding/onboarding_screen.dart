@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../activate_voice_ai_screen.dart';
 import 'onboarding_controller.dart';
 import 'steps/1_welcome_screen.dart';
 import 'steps/2_profile_screen.dart';
@@ -69,16 +70,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ],
           ),
         ),
-        child: Column(
+        child: Stack(
           children: [
-            Expanded(
-              child: IndexedStack(
-                index: _controller.currentPage,
-                children: _steps,
-              ),
+            IndexedStack(
+              index: _controller.currentPage,
+              children: _steps,
             ),
-            Padding(
-              padding: const EdgeInsets.only(bottom: 52, left: 30, right: 30, top: 0),
+            Positioned(
+              bottom: 52,
+              left: 30,
+              right: 30,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -114,7 +115,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             decoration: BoxDecoration(
                               color: _controller.currentPage == index
                                   ? const Color(0xFF95C5D9)
-                                  : const Color(0xFFD0D4D9),
+                                  : const Color(0xFF95C5D9).withOpacity(0.3),
                               borderRadius: BorderRadius.circular(8),
                             ),
                           ),
@@ -129,12 +130,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       shape: BoxShape.circle,
                       color: Color(0xFF95C5D9),
                     ),
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_forward, color: Color(0xFFFFFFFF), size: 18),
-                      onPressed: _controller.currentPage < _steps.length - 1
-                          ? _controller.nextPage
-                          : null,
-                    ),
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_forward, color: Color(0xFFFFFFFF), size: 18),
+                    onPressed: _controller.currentPage < _steps.length - 1
+                        ? _controller.nextPage
+                        : () {
+                            Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                builder: (context) => ActivateVoiceAIScreen(onActivate: () {}),
+                              ),
+                            );
+                          },
+                  ),
                   ),
                 ],
               ),
