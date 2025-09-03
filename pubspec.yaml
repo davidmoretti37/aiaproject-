@@ -30,14 +30,14 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  speech_to_text: ^6.6.2
+  speech_to_text: ^7.3.0
   flutter_tts: ^3.8.5
   http: ^1.2.1
   dio: ^5.7.0
   url_launcher: ^6.3.1
   shared_preferences: ^2.2.2
   google_sign_in: ^6.2.1
-  supabase_flutter: ^2.6.0
+  supabase_flutter: ^2.9.0
 
   tdesign_flutter: ^0.2.2
   getwidget: ^4.0.0
@@ -61,15 +61,15 @@ dependencies:
   lottie: ^3.0.0  # For Lottie animations
   
   # Professional-grade audio processing packages
-  flutter_sound: ^9.2.13 # Professional audio recording and playback
   audio_session: ^0.1.16  # Advanced audio session management
-  permission_handler: ^10.4.3  # Proper audio permissions
+  flutter_background_service: ^5.1.0
+  android_intent_plus: ^5.3.1
+  permission_handler: ^12.0.1  # Proper audio permissions
   wakelock_plus: ^1.2.1  # Keep device awake during voice sessions
   just_audio: ^0.9.34  # High-performance audio playbook
-  noise_meter: ^5.0.2 # For real-time microphone volume
   
   # OpenAI Realtime API dependencies
-  flutter_webrtc: ^0.11.7  # WebRTC for real-time communication
+  flutter_webrtc: ^1.1.0  # WebRTC for real-time communication
   flutter_dotenv: ^5.1.0   # Environment variables for API keys
   video_player: ^2.8.1     # Video player for AIA video background
   geolocator: ^10.1.0      # Para captura de localização do usuário
@@ -101,6 +101,7 @@ flutter:
   # https://flutter.dev/to/resolution-aware-images
   assets:
     - assets/
+    - assets/precise_model/
     - .env
   
   shaders:

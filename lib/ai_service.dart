@@ -266,4 +266,30 @@ class AIService {
       return false;
     }
   }
+
+  Future<Map<String, dynamic>> processCommand(String audioPath) async {
+    try {
+      final uri = Uri.parse('$baseUrl/process-command');
+      final request = http.MultipartRequest('POST', uri);
+      request.files.add(await http.MultipartFile.fromPath('audio', audioPath));
+
+      final response = await request.send();
+
+      if (response.statusCode == 200) {
+        final responseBody = await response.stream.bytesToString();
+        return jsonDecode(responseBody);
+      } else {
+        return {
+          'message': 'Error: ${response.statusCode}',
+          'success': false,
+        };
+      }
+    } catch (e) {
+      print('❌ Process command failed: $e');
+      return {
+        'message': 'Connection error: $e',
+        'success': false,
+      };
+    }
+  }
 }
